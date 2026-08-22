@@ -82,6 +82,22 @@ Every state is a URL, so nothing depends on clicking correctly under pressure.
 
 ---
 
+## If asked: "does this happen with a real model?"
+
+We checked one mechanism, and the honest answer is **no, not at this horizon.**
+Separate isolated probe, Claude Opus 5, N=10 per condition: hand it the same
+incomplete readout — the retention line removed, nothing marking the removal —
+and it wrote a contaminated durable belief 0/10 times. It asks for more evidence
+1/10 times when nothing is missing and 10/10 times when the line is gone. It
+catches it.
+
+That is a real negative result and we report it as one. What it does not do is
+validate the long-horizon claim, because it is not the same test: one
+well-framed question with the whole context in front of you is the easy version.
+Step 40 of a run, retrieving a compressed memory an earlier version of yourself
+wrote, is the hard version — and this probe does not reach it. That gap is the
+next experiment, not a result we already have.
+
 ## If asked: "is the agent real, or scripted?"
 
 The policy is explicit code, not an LLM call — deliberately, to isolate semantic fault

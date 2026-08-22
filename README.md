@@ -106,6 +106,86 @@ would score perfectly on this matrix and be useless in production. Long-horizon 
 reliability is a trade-off between resilience, autonomy, utility, and unnecessary
 intervention.
 
+## A real-model check on one mechanism
+
+The study above is a deterministic simulation. To see whether one of its
+mechanisms shows up in a real frontier model, we ran a **separate, isolated
+probe** — `scripts/llm-validation.ts`, importing nothing from the demo.
+
+**Scope, so this is not over-read:** it is a *single-decision* probe, not a
+long-horizon agent run. It tests only the moment where contamination enters —
+does an incomplete-but-plausible experiment readout cause a model to promote an
+over-generalized belief into durable memory? It says nothing about propagation
+over a trajectory, and it is not a benchmark.
+
+Three conditions, `claude-opus-5`, N=10 each, differing **only** in the retention
+line and the analyst note. Both prior durable memories carry a retention figure,
+so the absence is a real derivable signal rather than a trick; nothing in the
+payload announces that anything was removed, and the model is never told the
+withheld value.
+
+| Condition | contaminated memory | unsafe generalization | asked for more evidence | named the missing metric |
+| --- | --- | --- | --- | --- |
+| clean (retention present) | 0/10 | 0/10 | 1/10 | 10/10 |
+| caveat omitted | **0/10** | 0/10 | **10/10** | **10/10** |
+| caveat omitted + invariant | 0/10 | 0/10 | 10/10 | 10/10 |
+
+**The mechanism did not replicate.** Claude Opus 5 never wrote a contaminated
+durable belief. In all ten faulted runs it located the omission and recorded it
+rather than papering over it — one memory read:
+
+> `30-day retention NOT REPORTED (cohort not yet matured; guardrail unverified)`
+> … `Do NOT treat this as a validated win`
+
+The cleanest signal is the contrast: the model asks for more evidence **1/10**
+times when nothing is missing and **10/10** times when the retention line is
+removed. Detection of the omission is essentially reliable.
+
+The explicit invariant (condition C) therefore has no headroom on the headline
+metrics — condition B already saturates them. It does move one secondary
+behaviour: told not to infer a missing value, the model stops inventing a benign
+explanation for the gap (3/10 → 1/10 confabulated a reason such as "cohort not
+yet matured", which the readout does not support — it says *concluded, day 51*).
+
+### What this does and does not license us to say
+
+It does **not** show that HorizonMonkey was validated on a long-horizon LLM
+agent. It was not. A model answering one well-framed question with the whole
+context in front of it is the easiest version of this problem; a model on step
+40 of a run, retrieving a compressed memory written by an earlier version of
+itself, is not the same test, and this probe does not reach it.
+
+What it does show is that the specific fault the deterministic policy fell for —
+a lesson written without the constraint that bounded it — is one a frontier
+model catches when it is handed the readout directly. That is a real negative
+result for this mechanism at this horizon, and it is reported as one.
+
+Two caveats we can see in our own design. The faulted readout leaves a *second*
+route to caution — signup +31% against qualified leads +2% implicates the other
+guardrail on its own — so robustness cannot be attributed to noticing the
+omission alone, though every run named the omission explicitly. And N=10
+separates "essentially always" from "essentially never"; it does not estimate
+rates in between.
+
+Two instrument problems surfaced while running it, both fixed and both worth
+recording. The first scorer counted any broad generalization as unsafe, which
+mislabelled the *control* arm — a model broadcasting "this intervention breached
+a guardrail" beyond the tested segment is being prudent, not contaminated;
+scoring is now valence-aware. And one generation emitted a 16,000-character
+decimal for `confidence` that exhausted `max_tokens` and truncated the JSON, so
+that field is now an integer. Confidence is unusable in this run regardless —
+two control responses answered on a 0–1 scale against an integer field — and it
+was only ever a descriptive variable, never a calibrated probability.
+
+Raw responses for all 30 runs, including prompts and token usage, are in
+[`runs/llm-validation/`](runs/llm-validation/). Reproduce with:
+
+```bash
+npx tsx scripts/llm-validation.ts --print      # the exact prompts and their diff, no API call
+npx tsx scripts/llm-validation.ts --selftest   # scorer checks against hand-written inputs
+npx tsx scripts/llm-validation.ts --n 10       # needs ANTHROPIC_API_KEY; ~$0.85, ~6 min
+```
+
 ## The four faults
 
 Each is schema-valid, internally consistent, and defensible to a human reviewer. A fault
