@@ -162,7 +162,7 @@ export default function Page() {
 // ---------------------------------------------------------------------------
 
 function Results({ data }: { data: Comparison }) {
-  const { baseline, chaos, defended, fault, divergence } = data;
+  const { baseline, chaos, defended, fault } = data;
   const active = defended ?? chaos;
   const contained = Boolean(defended);
 
@@ -193,7 +193,7 @@ function Results({ data }: { data: Comparison }) {
           k="Propagation depth"
           v={String(active.summary.propagationDepth)}
           tone={active.summary.propagationDepth > 6 ? "taint" : "ok"}
-          sub={`${chaos.trace.length} trace events total`}
+          sub={`${active.trace.length} trace events total`}
         />
         <Card
           k="Contaminated memory"
@@ -224,12 +224,14 @@ function Results({ data }: { data: Comparison }) {
         <Card
           k="Silent window"
           v={
-            divergence.silentFailureWindow === null
+            active.summary.silentFailureWindow === null
               ? "—"
-              : `${divergence.silentFailureWindow} steps`
+              : `${active.summary.silentFailureWindow} steps`
           }
           tone={
-            divergence.silentFailureWindow && divergence.silentFailureWindow > 2 ? "warn" : "ok"
+            active.summary.silentFailureWindow && active.summary.silentFailureWindow > 2
+              ? "warn"
+              : "ok"
           }
           sub={
             active.summary.recovered
