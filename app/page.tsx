@@ -1,477 +1,478 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Comparison } from "../examples/growth-agent/compare";
 import type { DefenseId, RunResult } from "../examples/growth-agent/domain";
 import type { FaultType, TraceEvent } from "../core/types";
 import type { GraphNode } from "../core/propagation";
 
-const FAULTS: { id: FaultType; label: string }[] = [
+// ===========================================================================
+// Presentation layer.
+//
+// The run is real: clicking BREAK executes the deterministic experiment
+// server-side and returns the complete instrumented trace. What this file adds
+// is playback — it walks that trace event by event so an audience can watch a
+// belief travel. No event is synthesized, and every number on screen is derived
+// from trace fields the run actually produced.
+// ===========================================================================
+
+type FaultChoice = FaultType | "none";
+
+const FAULTS: { id: FaultChoice; label: string }[] = [
+  { id: "none", label: "No fault — control run" },
+  { id: "memory_poisoning", label: "Caveat omission" },
   { id: "stale_observation", label: "Stale observation" },
   { id: "goal_mutation", label: "Objective drift" },
-  { id: "memory_poisoning", label: "Caveat omission" },
   { id: "numeric_perturbation", label: "Metric drift" },
 ];
 
-const DEFENSES: { id: DefenseId; label: string }[] = [
-  { id: "freshness_validator", label: "Freshness validator" },
-  { id: "guardrail_checker", label: "Objective re-anchor" },
+/**
+ * `guardrail_checker` is offered but flagged. One of its two branches consults
+ * the simulator's ground-truth effect for an experiment that has not run, which
+ * no deployable check could do. It is honest for objective drift — where only
+ * the legitimate missing-guardrail branch fires — and oracle-assisted elsewhere.
+ */
+const DEFENSES: { id: DefenseId; label: string; oracle?: boolean }[] = [
   { id: "provenance_auditor", label: "Provenance auditor" },
+  { id: "freshness_validator", label: "Freshness validator" },
+  { id: "guardrail_checker", label: "Objective re-anchor (simulator-only)" },
 ];
 
-/** Which defense is designed for which fault — used for the one-click demo path. */
-const NATURAL_DEFENSE: Record<FaultType, DefenseId> = {
-  stale_observation: "freshness_validator",
-  goal_mutation: "guardrail_checker",
-  memory_poisoning: "provenance_auditor",
-  numeric_perturbation: "provenance_auditor",
-};
+/** Hold ticks are steps where the agent did nothing but wait for traffic. */
+const isNoise = (e: TraceEvent) => e.type === "evaluation";
 
-function readUrl(): { fault: FaultType; defenses: DefenseId[] } {
-  if (typeof window === "undefined") return { fault: "stale_observation", defenses: [] };
+/** Per-event dwell time. The fault gets a beat; routine work goes past quickly. */
+function dwell(e: TraceEvent): number {
+  if (e.isFaultOrigin) return 1500;
+  if (e.type === "fault_detection" || e.type === "recovery") return 900;
+  if (e.faultIds.length > 0) return e.type === "action" || e.type === "memory_write" ? 480 : 300;
+  if (e.type === "action") return 260;
+  return 110;
+}
+
+function glyph(e: TraceEvent) {
+  if (e.isFaultOrigin) return "⚡";
+  if (e.type === "fault_detection" || e.type === "recovery") return "🛡";
+  if (e.quarantined) return "⊘";
+  if (e.faultIds.length > 0) return e.type === "action" ? "✗" : "⚠";
+  return "✓";
+}
+
+function lineClass(e: TraceEvent) {
+  if (e.isFaultOrigin) return "line origin";
+  if (e.type === "fault_detection" || e.type === "recovery") return "line defense";
+  if (e.quarantined) return "line taint quar";
+  if (e.faultIds.length > 0) return e.type === "action" ? "line bad" : "line taint";
+  return "line norm";
+}
+
+/** Every demo state is linkable, so a mis-click on stage is recoverable. */
+function fromUrl(): { fault: FaultChoice; defense: DefenseId | "" } {
+  if (typeof window === "undefined") return { fault: "none", defense: "" };
   const q = new URLSearchParams(window.location.search);
-  const f = q.get("fault") as FaultType | null;
-  const d = (q.get("defense") ?? "").split(",").filter(Boolean) as DefenseId[];
+  const f = q.get("fault") as FaultChoice | null;
+  const d = q.get("defense") as DefenseId | null;
   return {
-    fault: FAULTS.some((x) => x.id === f) ? (f as FaultType) : "stale_observation",
-    defenses: d.filter((x) => DEFENSES.some((y) => y.id === x)),
+    fault: FAULTS.some((x) => x.id === f) ? (f as FaultChoice) : "none",
+    defense: DEFENSES.some((x) => x.id === d) ? (d as DefenseId) : "",
   };
 }
 
 export default function Page() {
-  const [fault, setFault] = useState<FaultType>("stale_observation");
-  const [defenses, setDefenses] = useState<DefenseId[]>([]);
+  const initial = typeof window === "undefined" ? { fault: "none" as FaultChoice, defense: "" as DefenseId | "" } : fromUrl();
+  const [fault, setFault] = useState<FaultChoice>(initial.fault);
+  const [defense, setDefense] = useState<DefenseId | "">(initial.defense);
   const [data, setData] = useState<Comparison | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cursor, setCursor] = useState(-1);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Hydrate from the URL once, so a given fault/defense pairing is linkable.
+  /** Which arm of the comparison is on screen. */
+  const arm: "baseline" | "chaos" | "defended" =
+    fault === "none" ? "baseline" : defense ? "defended" : "chaos";
+
+  const run: RunResult | null = data
+    ? arm === "baseline"
+      ? data.baseline
+      : arm === "defended" && data.defended
+        ? data.defended
+        : data.chaos
+    : null;
+
+  const events = useMemo(() => (run ? run.trace.filter((e) => !isNoise(e)) : []), [run]);
+  const done = cursor >= events.length - 1 && events.length > 0;
+
+  const stop = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+
   useEffect(() => {
-    const u = readUrl();
-    setFault(u.fault);
-    setDefenses(u.defenses);
-  }, []);
+    if (!playing || !events.length) return;
+    if (cursor >= events.length - 1) {
+      setPlaying(false);
+      return;
+    }
+    const next = cursor + 1;
+    timer.current = setTimeout(() => setCursor(next), dwell(events[next]) / speed);
+    return stop;
+  }, [playing, cursor, events, speed]);
 
-  const run = useCallback(
-    async (f: FaultType, d: DefenseId[]) => {
-      setBusy(true);
-      const res = await fetch("/api/run", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ faultType: f, defenses: d }),
-      });
-      setData(await res.json());
-      setBusy(false);
-    },
-    []
-  );
-
-  useEffect(() => {
-    void run(fault, defenses);
+  const execute = useCallback(async () => {
+    stop();
+    setBusy(true);
+    setCursor(-1);
+    setPlaying(false);
+    const res = await fetch("/api/run", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      // The control arm is produced by every comparison, so any fault type
+      // works as the carrier when the user selected "no fault".
+      body: JSON.stringify({
+        faultType: fault === "none" ? "memory_poisoning" : fault,
+        defenses: fault === "none" || !defense ? [] : [defense],
+      }),
+    });
+    setData(await res.json());
+    setBusy(false);
+    setPlaying(true);
     const q = new URLSearchParams();
-    q.set("fault", fault);
-    if (defenses.length) q.set("defense", defenses.join(","));
-    window.history.replaceState(null, "", `?${q}`);
-  }, [fault, defenses, run]);
+    if (fault !== "none") q.set("fault", fault);
+    if (defense) q.set("defense", defense);
+    window.history.replaceState(null, "", q.toString() ? `?${q}` : "/");
+  }, [fault, defense]);
 
-  const toggleDefense = (id: DefenseId) =>
-    setDefenses((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  // Open on the control arm so the first thing anyone sees is a healthy run.
+  const booted = useRef(false);
+  useEffect(() => {
+    if (booted.current) return;
+    booted.current = true;
+    void execute();
+  }, [execute]);
+
+  const replay = () => {
+    stop();
+    setCursor(-1);
+    setPlaying(true);
+  };
+
+  // Seen-so-far slice. Every progressive metric below counts only this.
+  const seen = cursor >= 0 ? events.slice(0, cursor + 1) : [];
+  const tainted = seen.filter((e) => e.faultIds.length > 0 && !e.isFaultOrigin);
+  const live = {
+    contaminated: tainted.filter((e) => e.type === "memory_write" && !e.quarantined).length,
+    decisions: tainted.filter((e) => e.type === "decision").length,
+    actions: tainted.filter((e) => e.type === "action").length,
+    artifacts: tainted.length,
+    detected: seen.some((e) => e.type === "fault_detection"),
+    injected: seen.some((e) => e.isFaultOrigin),
+  };
+
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [cursor]);
 
   return (
     <div className="wrap">
       <header className="top">
         <div className="brand">
-          <div className="kicker">Chaos engineering for agent state</div>
+          <div className="kicker">Semantic chaos for long-horizon agents</div>
           <h1>
             Horizon<span>Monkey</span>
           </h1>
           <p>
-            Long-horizon agents rarely fail because a dependency returned 500. They fail because
-            something plausible entered the belief set and every decision after it stayed locally
-            reasonable. This injects that, then measures how far it travels.
+            Chaos Monkey breaks infrastructure. Long-horizon agents can fail while every call
+            succeeds — one plausible fact enters the belief set and compounds. Pick how you want to
+            break the agent.
           </p>
-        </div>
-
-        <div className="controls">
-          <div className="ctrl-row">
-            <span className="ctrl-label">Fault</span>
-            {FAULTS.map((f) => (
-              <button
-                key={f.id}
-                className="chip"
-                data-on={fault === f.id}
-                onClick={() => setFault(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div className="ctrl-row">
-            <span className="ctrl-label">Defense</span>
-            {DEFENSES.map((d) => (
-              <button
-                key={d.id}
-                className="chip def"
-                data-on={defenses.includes(d.id)}
-                onClick={() => toggleDefense(d.id)}
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
-          <div className="ctrl-row">
-            <button
-              className="run-btn"
-              disabled={busy}
-              onClick={() => {
-                const d = NATURAL_DEFENSE[fault];
-                setDefenses((cur) => (cur.includes(d) ? cur : [...cur, d]));
-              }}
-            >
-              {busy ? "running…" : "Harden against this fault →"}
-            </button>
-            {defenses.length > 0 && (
-              <button className="chip" onClick={() => setDefenses([])}>
-                clear defenses
-              </button>
-            )}
-          </div>
         </div>
       </header>
 
-      {!data ? (
-        <div className="loading">running control arm, chaos arm and defended arm…</div>
-      ) : (
-        <Results data={data} />
-      )}
-
-      <div className="footnote">
-        <b>What this measures.</b> Taint here is dependency lineage, not proven causation: an event
-        is marked when it was derived, transitively, from a corrupted artifact. That is a weaker
-        claim than &ldquo;the fault caused this decision&rdquo; — but because the injector holds the
-        ground truth, it is exact, which post-hoc failure attribution over a long trajectory is not.
-        Goal fidelity is scored structurally against the canonical world state, never by asking a
-        model whether the agent did well. <b>Prior work.</b> Fault injection for agents already
-        exists — AgentChaos injects at the LLM transport layer, and the memory-poisoning literature
-        studies an adversary planting content. This targets the case in between: no attacker, no
-        failed call, just an ordinary staleness or summarization defect that the agent has no reason
-        to question.
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-
-function Results({ data }: { data: Comparison }) {
-  const { baseline, chaos, defended, fault } = data;
-  const active = defended ?? chaos;
-  const contained = Boolean(defended);
-
-  return (
-    <>
-      <Verdict data={data} />
-
-      <div className="cards">
-        <Card
-          k="Goal fidelity"
-          v={
-            <>
-              <span className="was">{baseline.summary.goalFidelity}</span>
-              <span className="arrow">→</span>
-              {active.summary.goalFidelity}
-            </>
-          }
-          tone={
-            active.summary.goalFidelity >= baseline.summary.goalFidelity - 4
-              ? "ok"
-              : active.summary.goalFidelity < 65
-                ? "bad"
-                : "warn"
-          }
-          sub={contained ? "control → defended" : "control → chaos"}
-        />
-        <Card
-          k="Propagation depth"
-          v={String(active.summary.propagationDepth)}
-          tone={active.summary.propagationDepth > 6 ? "taint" : "ok"}
-          sub={`${active.trace.length} trace events total`}
-        />
-        <Card
-          k="Contaminated memory"
-          v={String(active.summary.memoryContamination)}
-          tone={active.summary.memoryContamination > 0 ? "taint" : "ok"}
-          sub="durable beliefs derived from the fault"
-        />
-        <Card
-          k="Affected decisions"
-          v={`${active.summary.affectedDecisions} / ${active.summary.affectedActions}`}
-          tone={active.summary.affectedDecisions > 0 ? "taint" : "ok"}
-          sub="decisions / external actions"
-        />
-        <Card
-          k="Detection"
-          v={
-            active.summary.faultDetected
-              ? `+${active.summary.detectionLatency ?? 0}`
-              : "never"
-          }
-          tone={active.summary.faultDetected ? "ok" : "bad"}
-          sub={
-            active.summary.faultDetected
-              ? `steps after injection · ${activeDefense(active)}`
-              : "no invariant caught it"
-          }
-        />
-        <Card
-          k="Silent window"
-          v={
-            active.summary.silentFailureWindow === null
-              ? "—"
-              : `${active.summary.silentFailureWindow} steps`
-          }
-          tone={
-            active.summary.silentFailureWindow && active.summary.silentFailureWindow > 2
-              ? "warn"
-              : "ok"
-          }
-          sub={
-            active.summary.recovered
-              ? `belief load-bearing s${fault?.injectedAtStep}–s${active.summary.recoveryStep}`
-              : `injected s${fault?.injectedAtStep} · never corrected`
-          }
-        />
-      </div>
-
-      <div className="grid">
-        <div className="panel">
-          <h2>
-            Trace — {contained ? "defended run" : "chaos run"}
-            <em>{active.trace.length} events over {active.config.maxSteps} steps</em>
-          </h2>
-          <Timeline trace={active.trace} />
+      <div className="deck">
+        <div className="field">
+          <label>Fault</label>
+          <select
+            value={fault}
+            onChange={(e) => {
+              setFault(e.target.value as FaultChoice);
+              setCursor(-1);
+              setPlaying(false);
+              setData(null);
+            }}
+          >
+            {FAULTS.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.label}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          {fault && (
-            <div className="panel fault-detail">
+        <div className="field">
+          <label>Defense</label>
+          <select
+            value={defense}
+            disabled={fault === "none"}
+            onChange={(e) => {
+              setDefense(e.target.value as DefenseId | "");
+              setCursor(-1);
+              setPlaying(false);
+              setData(null);
+            }}
+          >
+            <option value="">None</option>
+            {DEFENSES.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button className="break-btn" onClick={execute} disabled={busy}>
+          {busy ? "running…" : fault === "none" ? "▶  RUN CONTROL" : "▶  BREAK THE AGENT"}
+        </button>
+
+        {events.length > 0 && (
+          <>
+            <button className="mini-btn" onClick={() => setPlaying((p) => !p)} disabled={done}>
+              {playing ? "❙❙ pause" : "▶ resume"}
+            </button>
+            <button className="mini-btn" onClick={replay}>
+              ↻ replay
+            </button>
+            {[0.5, 1, 2].map((s) => (
+              <button key={s} className="mini-btn" data-on={speed === s} onClick={() => setSpeed(s)}>
+                {s}×
+              </button>
+            ))}
+          </>
+        )}
+
+        {defense === "guardrail_checker" && (
+          <span className="oracle-note">
+            ⚠ oracle-assisted — reads simulator ground truth, not deployable
+          </span>
+        )}
+      </div>
+
+      {!run ? (
+        <div className="loading">
+          Select a fault and press {fault === "none" ? "RUN CONTROL" : "BREAK THE AGENT"}. The
+          deterministic run executes immediately; the trace is then replayed event by event.
+        </div>
+      ) : (
+        <>
+          <div className="stage">
+            <div className="term">
+              <div className="term-bar">
+                <span className={`dot${playing ? " live" : ""}`} />
+                live agent trace · {arm}
+                <span className="right">
+                  {Math.max(0, cursor + 1)}/{events.length} events · {run.trace.filter(isNoise).length}{" "}
+                  wait-for-traffic ticks hidden
+                </span>
+              </div>
+              <div className="term-body" ref={bodyRef}>
+                {seen.map((e, i) => (
+                  <div key={e.id} className={`${lineClass(e)}${i === seen.length - 1 ? " line-in" : ""}`}>
+                    <span className="n">{String(e.step).padStart(2, "0")}</span>
+                    <span className="g">{glyph(e)}</span>
+                    <span className="t">
+                      <b>{e.type.replace(/_/g, " ")}</b> — {e.summary}
+                      {e.isFaultOrigin && e.detail ? ` · ${e.detail}` : ""}
+                    </span>
+                  </div>
+                ))}
+                {playing && <div className="cursor-row" />}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="health green">
+                <h3>
+                  What monitoring sees <span>every row computed from this run</span>
+                </h3>
+                <HRow k="Observations delivered" v={`${seen.filter((e) => e.type === "observation").length}/${run.trace.filter((e) => e.type === "observation").length}`} />
+                <HRow k="Malformed payloads" v="0" />
+                <HRow k="Agent exceptions" v="0" />
+                <HRow k="Run completed" v={`${done ? run.config.maxSteps : Math.max(0, (seen.at(-1)?.step ?? 0) + 1)}/${run.config.maxSteps} steps`} />
+                <HRow k="Agent's own guardrail check" v="passed" />
+              </div>
+
+              <div className="health red">
+                <h3>
+                  What it misses <span>same run, semantic layer</span>
+                </h3>
+                <HRow k="Contaminated memories" v={String(live.contaminated)} bad={live.contaminated > 0} />
+                <HRow k="Tainted decisions" v={String(live.decisions)} bad={live.decisions > 0} />
+                <HRow k="Tainted external actions" v={String(live.actions)} bad={live.actions > 0} />
+                <HRow
+                  k="Fault detected"
+                  v={!live.injected ? "—" : live.detected ? "YES" : "NO"}
+                  bad={live.injected && !live.detected}
+                  ok={live.detected}
+                />
+                <div className="hrow">
+                  <span className="k">Goal fidelity</span>
+                  <span className="fid">
+                    {done ? (
+                      <>
+                        <span className="was">{data!.baseline.summary.goalFidelity}</span>
+                        <span style={{ color: "var(--ink-faint)" }}> → </span>
+                        <span
+                          style={{
+                            color:
+                              run.summary.goalFidelity >= data!.baseline.summary.goalFidelity - 4
+                                ? "var(--ok)"
+                                : "var(--bad)",
+                          }}
+                        >
+                          {run.summary.goalFidelity}
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ color: "var(--ink-faint)" }}>— scored at run end</span>
+                    )}
+                  </span>
+                  <span className="s" />
+                </div>
+              </div>
+
+              <div className="panel">
+                <h2>
+                  Semantic blast radius
+                  <em>{arm === "baseline" ? "control arm — nothing to trace" : "lineage from the injection point"}</em>
+                </h2>
+                <div className="body">
+                  <Tree
+                    nodes={arm === "defended" ? data!.defendedGraph : arm === "chaos" ? data!.graph : []}
+                    revealed={new Set(seen.map((e) => e.id))}
+                    rootLabel={
+                      arm !== "baseline" && data!.fault
+                        ? `${data!.fault.label} → ${data!.fault.targetLabel}`
+                        : "no fault injected"
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {arm === "defended" && data!.defended && (
+            <div className="panel" style={{ marginTop: 16 }}>
               <h2>
-                The fault<em>{fault.label} → {fault.targetLabel}</em>
+                Same fault, one invariant<em>{DEFENSES.find((d) => d.id === defense)?.label}</em>
               </h2>
-              <div className="body">
-                <div className="why">{fault.plausibility}</div>
-                <FaultDiff run={active} />
+              <div className="cmp">
+                <div className="hd" />
+                <div className="hd">without defense</div>
+                <div className="hd">with defense</div>
+                <Cmp
+                  label="Goal fidelity"
+                  a={data!.chaos.summary.goalFidelity}
+                  b={data!.defended.summary.goalFidelity}
+                />
+                <Cmp
+                  label="Contaminated memories"
+                  a={data!.chaos.summary.memoryContamination}
+                  b={data!.defended.summary.memoryContamination}
+                />
+                <Cmp
+                  label="Tainted decisions / actions"
+                  a={`${data!.chaos.summary.affectedDecisions} / ${data!.chaos.summary.affectedActions}`}
+                  b={`${data!.defended.summary.affectedDecisions} / ${data!.defended.summary.affectedActions}`}
+                />
+                <Cmp
+                  label="Fault detected"
+                  a={data!.chaos.summary.faultDetected ? "YES" : "NO"}
+                  b={data!.defended.summary.faultDetected ? "YES" : "NO"}
+                />
+                <Cmp
+                  label="Guardrails breached"
+                  a={data!.chaos.summary.guardrailViolations.length}
+                  b={data!.defended.summary.guardrailViolations.length}
+                />
               </div>
             </div>
           )}
 
-          <div className="panel">
-            <h2>
-              Where it went<em>dependency lineage from the injection point</em>
-            </h2>
-            <div className="body">
-              <Tree
-                nodes={contained ? data.defendedGraph : data.graph}
-                rootLabel={fault ? `${fault.label} injected at step ${fault.injectedAtStep}` : "no fault"}
-              />
-            </div>
-          </div>
-
-          <div className="panel">
-            <h2>
-              Final position<em>what the business actually got</em>
-            </h2>
-            <div className="diff">
-              <Arm title="Control" run={baseline} />
-              <Arm title={contained ? "Defended" : "Chaos"} run={active} bad={!contained} />
-            </div>
-          </div>
-
-          <div className="panel">
-            <h2>
-              Goal fidelity breakdown<em>{contained ? "defended" : "chaos"} run</em>
-            </h2>
-            <div className="body bars">
-              {active.summary.fidelityBreakdown.map((b) => (
-                <div key={b.label}>
-                  <div className="bar-row">
-                    <span className="nm">{b.label}</span>
-                    <span className="bar-track">
-                      <span
-                        className="bar-fill"
-                        style={{
-                          width: `${(b.score / b.max) * 100}%`,
-                          background:
-                            b.score / b.max > 0.75
-                              ? "var(--ok)"
-                              : b.score / b.max > 0.4
-                                ? "var(--warn)"
-                                : "var(--bad)",
-                        }}
-                      />
-                    </span>
-                    <span className="sc">
-                      {b.score}/{b.max}
-                    </span>
+          <div className="stage" style={{ marginTop: 16 }}>
+            <div className="panel">
+              <h2>
+                The fault<em>{arm === "baseline" ? "control run — nothing injected" : data!.fault?.label}</em>
+              </h2>
+              <div className="body">
+                {arm !== "baseline" && data!.fault ? (
+                  <>
+                    <div className="fault-detail">
+                      <div className="why">{data!.fault.plausibility}</div>
+                    </div>
+                    <FaultDiff run={data!.chaos} />
+                  </>
+                ) : (
+                  <div style={{ color: "var(--ink-dim)", fontSize: 12.5 }}>
+                    The control arm runs the same agent against the same world with nothing
+                    perturbed. It is the only reason the faulted numbers mean anything.
                   </div>
-                  <div className="bar-row">
-                    <span />
-                    <span className="bar-note">{b.note}</span>
-                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="panel">
+              <h2>
+                Real-model probe<em>claude-opus-5 · N=10 per condition</em>
+              </h2>
+              <div className="probe">
+                <span className="k">Caveat omission, no defense</span>
+                <span className="v">0 / 10 contaminated</span>
+                <span className="k">Requested the missing data</span>
+                <span className="v">10 / 10</span>
+                <span className="k">Named the withheld metric</span>
+                <span className="v">10 / 10</span>
+                <span className="k">Control arm, nothing withheld</span>
+                <span className="v">1 / 10 asked</span>
+                <div className="verdict">ROBUST TO THIS PROBE — the mechanism did not replicate</div>
+                <div className="fine">
+                  A separate single-decision probe, not a long-horizon run: one readout, full
+                  context, one answer. It does not show that a model on step 40 — retrieving a
+                  compressed memory an earlier version of itself wrote — behaves the same way. A
+                  harness that could only produce failures would not be measuring anything.
                 </div>
-              ))}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function HRow({ k, v, bad, ok }: { k: string; v: string; bad?: boolean; ok?: boolean }) {
+  return (
+    <div className="hrow">
+      <span className="k">{k}</span>
+      <span className="v" style={ok ? { color: "var(--ok)" } : undefined}>
+        {v}
+      </span>
+      <span className="s" style={ok ? { color: "var(--ok)" } : undefined}>
+        {bad ? "✗" : ok ? "✓" : v === "—" ? "" : "✓"}
+      </span>
+    </div>
+  );
+}
+
+function Cmp({ label, a, b }: { label: string; a: string | number; b: string | number }) {
+  return (
+    <>
+      <div className="lbl">{label}</div>
+      <div className="a">{a}</div>
+      <div className="b">{b}</div>
     </>
-  );
-}
-
-/** Scrolls straight to the injection point — the fault is the story, not step 0. */
-function Timeline({ trace }: { trace: TraceEvent[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const originId = trace.find((e) => e.isFaultOrigin)?.id;
-
-  useEffect(() => {
-    if (!originId || !ref.current) return;
-    const el = ref.current.querySelector(`[data-id="${originId}"]`);
-    if (el instanceof HTMLElement)
-      ref.current.scrollTo({ top: Math.max(0, el.offsetTop - ref.current.offsetTop - 90) });
-  }, [originId]);
-
-  return (
-    <div className="tl" ref={ref}>
-      {trace.map((e) => (
-        <Event key={e.id} e={e} />
-      ))}
-    </div>
-  );
-}
-
-const activeDefense = (r: RunResult) =>
-  r.faults[0]?.detectedBy?.replace(/_/g, " ") ?? "—";
-
-function Verdict({ data }: { data: Comparison }) {
-  const { baseline, chaos, defended, fault, divergence } = data;
-  if (!fault) return null;
-
-  if (defended && defended.summary.goalFidelity <= chaos.summary.goalFidelity + 2) {
-    // Reporting this honestly matters more than a clean demo. A harness that
-    // always shows its defenses working is not measuring anything.
-    return (
-      <div className="verdict">
-        None of the enabled invariants catch this one. {defended.summary.faultDetected
-          ? "The check fires, but not on the artifact that mattered"
-          : "The corrupted readout is fully matured and internally consistent, so a freshness check has nothing to object to"}
-        , and blast radius stays at{" "}
-        <span className="num">{defended.summary.propagationDepth}</span> events with{" "}
-        <span className="num">{defended.summary.memoryContamination}</span> contaminated{" "}
-        {defended.summary.memoryContamination === 1 ? "memory" : "memories"}. Goal fidelity is{" "}
-        <span className="num">{defended.summary.goalFidelity}</span> against a control of{" "}
-        {baseline.summary.goalFidelity}. Catching this class needs a different invariant — a
-        cross-source reconciliation check — which this harness does not ship yet.
-      </div>
-    );
-  }
-
-  if (defended) {
-    const contained = defended.summary.memoryContamination === 0;
-    const spread = defended.summary.propagationDepth > chaos.summary.propagationDepth;
-    return (
-      <div className={`verdict${contained ? " clean" : ""}`}>
-        With <b>{activeDefense(defended)}</b> enabled, the fault is caught at step{" "}
-        <span className="num">{defended.faults[0]?.detectedAtStep ?? "—"}</span> and goal fidelity
-        recovers to <span className="num">{defended.summary.goalFidelity}</span> against a control
-        of {baseline.summary.goalFidelity}.{" "}
-        {contained ? (
-          <>
-            Blast radius drops from <span className="num">{chaos.summary.propagationDepth}</span>{" "}
-            events and <span className="num">{chaos.summary.memoryContamination}</span>{" "}
-            contaminated memories to{" "}
-            <span className="num">{defended.summary.propagationDepth}</span> and{" "}
-            <span className="num">0</span>.
-          </>
-        ) : (
-          <>
-            But it blocks the <em>action</em> without repairing the <em>belief</em>:{" "}
-            <span className="num">{defended.summary.memoryContamination}</span> memories are still
-            contaminated, and because the agent keeps re-deriving from them, propagation{" "}
-            {spread ? "rises" : "stays"} at{" "}
-            <span className="num">{defended.summary.propagationDepth}</span> events — up from{" "}
-            <span className="num">{chaos.summary.propagationDepth}</span>. The business is
-            protected; the agent is still wrong.
-          </>
-        )}
-      </div>
-    );
-  }
-
-  const s = chaos.summary;
-  return (
-    <div className="verdict">
-      One {fault.label.toLowerCase()} in <b>{fault.targetLabel}</b> was never flagged by any
-      invariant. It contaminated <span className="num">{s.memoryContamination}</span> durable
-      {" "}memories, reached <span className="num">{s.affectedDecisions}</span> decisions and{" "}
-      <span className="num">{s.affectedActions}</span> external actions, and moved goal fidelity
-      from {baseline.summary.goalFidelity} to <span className="num">{s.goalFidelity}</span>
-      {s.recovered ? (
-        <>
-          . The agent did correct itself at step <span className="num">{s.recoveryStep}</span>, when
-          the real numbers finally matured — <span className="num">{divergence.silentFailureWindow}</span>{" "}
-          steps and {s.guardrailViolations.length > 0 ? "one full-traffic rollout" : "several decisions"} too
-          late. Recovering a belief does not un-ship the change it justified.
-        </>
-      ) : (
-        <>
-          , and it was still driving decisions when the run ended,{" "}
-          <span className="num">{divergence.silentFailureWindow}</span> steps after injection.
-        </>
-      )}{" "}
-      Every tool call in this run succeeded.
-    </div>
-  );
-}
-
-function Card({
-  k,
-  v,
-  sub,
-  tone,
-}: {
-  k: string;
-  v: React.ReactNode;
-  sub: string;
-  tone: "ok" | "bad" | "warn" | "taint";
-}) {
-  return (
-    <div className="card">
-      <div className="k">{k}</div>
-      <div className={`v ${tone}`}>{v}</div>
-      <div className="sub">{sub}</div>
-    </div>
-  );
-}
-
-function Event({ e }: { e: TraceEvent }) {
-  return (
-    <div
-      className="ev"
-      data-taint={e.faultIds.length > 0}
-      data-origin={Boolean(e.isFaultOrigin)}
-      data-quar={Boolean(e.quarantined)}
-      data-kind={e.type}
-      data-id={e.id}
-    >
-      <div className="step">{String(e.step).padStart(2, "0")}</div>
-      <div className="body2">
-        <div className="ttl">
-          <span className="tag">{e.type.replace(/_/g, " ")}</span>
-          {e.isFaultOrigin && "⚡ "}
-          {e.summary}
-        </div>
-        {e.detail && <div className="meta">{e.detail}</div>}
-      </div>
-    </div>
   );
 }
 
@@ -481,86 +482,40 @@ function FaultDiff({ run }: { run: RunResult }) {
   const fmt = (v: unknown) =>
     typeof v === "object" && v !== null
       ? Object.entries(v as Record<string, unknown>)
-          .map(([k, val]) =>
-            `${k}: ${typeof val === "object" && val !== null ? JSON.stringify(val).replace(/[{}"]/g, "").replace(/,/g, "  ") : String(val)}`
+          .map(
+            ([k, val]) =>
+              `${k}: ${typeof val === "object" && val !== null ? JSON.stringify(val).replace(/[{}"[\]]/g, "").replace(/,/g, "  ") : String(val)}`
           )
           .join("\n")
       : String(v);
   return (
-    <>
-      <div className="sbs">
-        <div>
-          <div className="lbl">Ground truth</div>
-          <pre>{fmt(f.originalValue)}</pre>
-        </div>
-        <div className="corrupt">
-          <div className="lbl">What the agent saw</div>
-          <pre>{fmt(f.corruptedValue)}</pre>
-        </div>
+    <div className="sbs">
+      <div>
+        <div className="lbl">Ground truth</div>
+        <pre>{fmt(f.originalValue)}</pre>
       </div>
-      <div className="kv">
-        <span className="k">injected</span>
-        <span>step {f.injectedAtStep}</span>
-        <span className="k">detected</span>
-        <span>
-          {f.detectedAtStep !== undefined
-            ? `step ${f.detectedAtStep} by ${f.detectedBy?.replace(/_/g, " ")}`
-            : "never"}
-        </span>
-        <span className="k">schema valid</span>
-        <span>yes — every field populated, every call returned 200</span>
+      <div className="corrupt">
+        <div className="lbl">What the agent saw</div>
+        <pre>{fmt(f.corruptedValue)}</pre>
       </div>
-    </>
-  );
-}
-
-function Arm({ title, run, bad }: { title: string; run: RunResult; bad?: boolean }) {
-  const s = run.summary;
-  const shipped = run.launched.filter((e) => e.shipped);
-  return (
-    <div>
-      <h3>{title}</h3>
-      <div className="rec">{s.finalRecommendation}</div>
-      <div className="mini">
-        <div>
-          <b>true revenue</b>
-          <span style={{ color: s.trueCumulative.revenue >= 0 ? "var(--ok)" : "var(--bad)" }}>
-            {s.trueCumulative.revenue > 0 ? "+" : ""}
-            {s.trueCumulative.revenue}%
-          </span>
-        </div>
-        <div>
-          <b>true retention</b>
-          <span style={{ color: s.trueCumulative.retention >= -3 ? "var(--ok)" : "var(--bad)" }}>
-            {s.trueCumulative.retention > 0 ? "+" : ""}
-            {s.trueCumulative.retention}%
-          </span>
-        </div>
-        <div>
-          <b>shipped</b>
-          <span>{shipped.length} changes</span>
-        </div>
-        <div>
-          <b>guardrails</b>
-          <span style={{ color: s.guardrailViolations.length ? "var(--bad)" : "var(--ok)" }}>
-            {s.guardrailViolations.length ? `${s.guardrailViolations.length} breached` : "held"}
-          </span>
-        </div>
-      </div>
-      {bad && s.guardrailViolations.length > 0 && (
-        <div className="mini" style={{ color: "var(--bad)", fontFamily: "inherit", fontSize: 11.5 }}>
-          {s.guardrailViolations[0]}
-        </div>
-      )}
     </div>
   );
 }
 
-function Tree({ nodes, rootLabel }: { nodes: GraphNode[]; rootLabel: string }) {
+/** Lineage tree. Nodes light up only once playback has reached them. */
+function Tree({
+  nodes,
+  revealed,
+  rootLabel,
+}: {
+  nodes: GraphNode[];
+  revealed: Set<string>;
+  rootLabel: string;
+}) {
   if (nodes.length === 0)
     return (
       <div style={{ color: "var(--ink-faint)", fontSize: 12.5 }}>
-        Nothing downstream inherited the fault — it never left the injection point.
+        Nothing inherited a fault in this run.
       </div>
     );
 
@@ -572,14 +527,20 @@ function Tree({ nodes, rootLabel }: { nodes: GraphNode[]; rootLabel: string }) {
   const render = (n: GraphNode, depth: number, last: boolean): React.ReactNode[] => {
     if (seen.has(n.id) || depth > 7) return [];
     seen.add(n.id);
+    const on = revealed.has(n.id);
     const pad = depth === 0 ? "" : "│  ".repeat(depth - 1) + (last ? "└─ " : "├─ ");
     const rows: React.ReactNode[] = [
-      <div key={n.id} className={`node${n.quarantined ? " q" : ""}`} title={n.label}>
+      <div
+        key={n.id}
+        className={`node${n.quarantined ? " q" : ""}`}
+        style={on ? undefined : { color: "#2b3242" }}
+        title={n.label}
+      >
         {pad}
-        <span className="t">
+        <span className="t" style={on ? undefined : { color: "#2b3242" }}>
           s{String(n.step).padStart(2, "0")} {n.type.replace(/_/g, " ")} ·{" "}
         </span>
-        {n.quarantined ? "⛔ " : ""}
+        {n.quarantined ? "⊘ " : ""}
         {n.label}
       </div>,
     ];

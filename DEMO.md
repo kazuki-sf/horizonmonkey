@@ -1,86 +1,116 @@
 # Demo script — 90 seconds
 
-Have the app open at `http://localhost:3579/?fault=stale_observation` before you start.
-Every state is a URL, so nothing depends on clicking correctly under pressure.
+Open `http://localhost:3579/` before you start. It auto-runs the **control arm**
+on load, so the first thing on screen is a healthy agent. Every state is also a
+URL, so a mis-click on stage is recoverable:
+
+| State | URL |
+| --- | --- |
+| Control | `/` |
+| Chaos | `/?fault=memory_poisoning` |
+| Defended | `/?fault=memory_poisoning&defense=provenance_auditor` |
 
 ---
 
-**Open (15s)** — *don't touch the screen yet*
+**0–15s — everything is green** · *screen already shows the finished control run*
 
-> A server fails loudly. 500, timeout, crash — everything above it knows.
+> Chaos Monkey breaks infrastructure. But a long-running agent can fail while
+> every call succeeds.
 >
-> Long-horizon agents fail quietly. Every call returns 200, every payload validates,
-> and something slightly wrong enters the belief set. Twenty steps later the agent
-> confidently ships the wrong thing, and nothing in the trace looks like an error —
-> because nothing was one.
+> This is a growth agent, five months of experiments, nothing perturbed.
+> Observations delivered, zero malformed payloads, zero exceptions, ran to
+> completion, and its own guardrail checks passed. Goal fidelity 95.
+
+*Point at the green panel.*
 
 ---
 
-**The fault (20s)** — *point at the right-hand panel*
+**15–25s — pick the fault** · *Fault dropdown → **Caveat omission**, leave Defense on None*
 
-> This is a growth agent running five months of experiments. Its objective is qualified
-> revenue, with a hard guardrail: retention can't drop more than 3%.
->
-> We inject one fault. The analytics cache serves a day-2 snapshot as a completed
-> 30-day result. Look at the two boxes — every number on the right is real. Retention
-> just hasn't churned yet. A 40% discount reads as a clean win.
->
-> Nothing here is malformed. There's no attacker. This is a Tuesday.
+> Now pick how you want to break it. Not a 500 — nothing is going to crash.
+> We write one lesson to memory without the scope caveat that bounded it.
+> The sentence stays true. Only "SMB only, do not generalize" goes missing.
 
 ---
 
-**The propagation (25s)** — *point at the trace, then the tree*
+**25–55s — click ▶ BREAK THE AGENT** · *trace animates; let it run*
 
-> The trace is scrolled to the injection point. Step 5: the fault. Step 5: it becomes a
-> lesson. And because the result looks strong and fully matured, the agent promotes it
-> from "worked on SMB" to a general rule.
+> The run is real — it executes, and we replay its trace so you can watch the
+> belief travel.
 >
-> That's the door. This agent has a hard rule that an untested change never goes to all
-> traffic — you test on a segment, you roll out once you believe it works. Which means
-> the only route to a full-traffic rollout runs through the belief set.
+> *(at the red ⚡ line)* There it is. A finding about one segment just became a
+> rule about the whole site.
 >
-> Step 5, it rolls a site-wide 40% discount to 100% of traffic. Goal fidelity: 95 to 72.
-> Retention, in reality, down 12%.
+> *(as orange lines accumulate)* It enters memory. It gets consolidated into a
+> strategy note. It selects the next experiment. And there — the agent rolls a
+> change to **100% of traffic** on the strength of it.
+
+*Now the point. Sweep a hand across both right-hand panels.*
+
+> Left panel, same run, same second: still zero errors, still zero exceptions,
+> still completed, and the agent's **own** guardrail check passed — because it
+> checked the guardrail against its beliefs. Right panel: three contaminated
+> memories and climbing, a tainted decision, a tainted external action, fault
+> detected **no**.
+>
+> Every monitor you have says this system is healthy.
 
 ---
 
-**Recovery is not undo (10s)**
+**55–70s — the damage** · *wait for playback to finish*
 
-> The agent does correct itself — at step 10, when the real numbers finally mature. Five
-> steps and one site-wide rollout too late. Recovering a belief doesn't un-ship the
-> change it justified.
-
----
-
-**The defense (15s)** — *click "Harden against this fault"*
-
-> One invariant: don't promote a reading to durable memory until its slowest metric has
-> matured — and check when the aggregate was *computed*, not what the readout claims.
->
-> Caught at the injection step. Contaminated memories: two to zero. Fidelity back to 96.
+> Goal fidelity 95 to 56. Two guardrails breached. The agent did eventually
+> notice — at step 6, when the real numbers matured. Five steps and one
+> full-traffic rollout too late. Recovering a belief doesn't un-ship the change
+> it justified.
 
 ---
 
-**Close (15s)** — *click "Caveat omission", then "Objective re-anchor"*
+**70–85s — contain it** · *Defense dropdown → **Provenance auditor**, click BREAK again*
 
-> One more, because it surprised us. Here the re-anchor blocks the bad rollout — fidelity
-> goes 56 to 89, the business is fine. But contamination stays at six memories and
-> propagation goes from eleven events to **seventy-eight**, because the agent keeps
-> re-deriving from the same corrupted belief and getting stopped at the gate.
->
-> Blocking the action isn't the same as repairing the belief. Business damage and
-> semantic blast radius are different axes, and a mitigation can move them in opposite
-> directions. You only see that if you measure both.
->
-> Fault injection for agents isn't new. AgentChaos does the transport layer; the
-> memory-poisoning literature does adversaries. This is the case in between: no attacker,
-> no failed call, just ordinary drift in a system whose horizon is long enough for it to
-> compound.
->
-> For a long-horizon agent, reliability isn't only whether it keeps running. It's whether
-> it keeps believing true things.
+> Same fault, one invariant: a lesson may not claim a scope wider than the
+> evidence it came from. No ground truth, no oracle — just a check on the write.
+
+*Point at the blast radius collapsing to two nodes.*
+
+> Caught at the injection step. Quarantined. Contaminated memories six to zero,
+> fidelity back to 96.
 
 ---
+
+**85–90s — close** · *point at the Opus 5 panel*
+
+> And when we probed Claude Opus 5 with this exact mechanism, ten times — it was
+> robust. Zero contaminated beliefs. That's a negative result and we report it,
+> because a harness that could only produce failures wouldn't be measuring
+> anything.
+>
+> Long-horizon reliability isn't just keeping agents running. It's keeping their
+> beliefs true.
+
+---
+
+## Controls you have on stage
+
+`▶ BREAK THE AGENT` runs and plays · `❙❙ pause` freezes mid-propagation to talk
+over a line · `↻ replay` re-runs the animation without re-fetching ·
+`0.5× / 1× / 2×` if you are ahead of or behind the clock.
+
+Wait-for-traffic ticks are hidden from the terminal (the count is shown in the
+header) — they are steps where the agent did nothing but wait.
+
+## Why this fault and this defense
+
+`Caveat omission + Provenance auditor` is the scripted pair because neither side
+touches privileged information, it has the largest clean delta (95 → 56 → 96,
+contamination 6 → 0), the fault lands early enough to fit the clock, and it is
+the same mechanism the Opus 5 probe tested — so the last beat follows from the
+first.
+
+`Objective re-anchor` is in the dropdown but labelled **simulator-only**: one of
+its branches reads the simulator's ground-truth effect for an experiment that
+has not run. Do not demo it as a deployable defense. It is honest only for
+Objective drift, where the legitimate missing-guardrail branch is what fires.
 
 ## If asked: "does this happen with a real model?"
 
