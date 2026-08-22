@@ -333,7 +333,12 @@ export function runScenario(config: RunConfig): RunResult {
     });
 
     // ---- pre-flight the action against authoritative state -----------------
-    const inheritedFaults = [...new Set(choice.basis.flatMap((b) => agent.memories.find((m) => m.id === b)?.faultIds ?? []))];
+    const inheritedFaults = [
+      ...new Set([
+        ...choice.basis.flatMap((b) => agent.memories.find((m) => m.id === b)?.faultIds ?? []),
+        ...(objectiveFaultId ? [objectiveFaultId] : []),
+      ]),
+    ];
     const actionVerdict = checkAction(config.defenses, objective, choice, inheritedFaults);
     if (actionVerdict) {
       detections.push({ step, defense: actionVerdict.defense, faultIds: actionVerdict.faultIds });
@@ -351,10 +356,16 @@ export function runScenario(config: RunConfig): RunResult {
       objective = structuredClone(CANONICAL_OBJECTIVE);
       agent.objective = objective;
       objectiveFaultId = null;
-      const alt = agent
+      const blockedKey = `${choice.intervention}:${choice.segment}`;
+    const alt = agent
       .rank()
-      .find((c) => !c.guardrailBlocked && c.score > GrowthAgent.LAUNCH_FLOOR && !(c.segment === "all" && c.evidence === 0));
-      if (recoveryStep === null && actionVerdict.faultIds.length >= 0) {
+      .find(
+        (c) =>
+          `${c.intervention}:${c.segment}` !== blockedKey &&
+          !c.guardrailBlocked &&
+          c.score > GrowthAgent.LAUNCH_FLOOR
+      );
+      if (recoveryStep === null && actionVerdict.faultIds.length > 0) {
         recoveryStep = step;
         push({
           id: nid("rec"),
@@ -405,7 +416,9 @@ export function runScenario(config: RunConfig): RunResult {
   propagate(trace);
 
   const faults: Fault[] = injector.faults;
-  const truePositive = detections.find((d) => d.faultIds.length > 0) ?? (faults.length ? detections[0] : undefined);
+  // A check firing on an artifact that carries no taint is a false positive, not
+  // a detection. Counting it as a catch would let a noisy invariant look effective.
+  const truePositive = detections.find((d) => d.faultIds.length > 0);
   if (truePositive && faults[0]) {
     faults[0].detectedAtStep = truePositive.step;
     faults[0].detectedBy = truePositive.defense;

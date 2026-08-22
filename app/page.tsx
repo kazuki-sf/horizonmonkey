@@ -23,7 +23,7 @@ const NATURAL_DEFENSE: Record<FaultType, DefenseId> = {
   stale_observation: "freshness_validator",
   goal_mutation: "guardrail_checker",
   memory_poisoning: "provenance_auditor",
-  numeric_perturbation: "freshness_validator",
+  numeric_perturbation: "provenance_auditor",
 };
 
 function readUrl(): { fault: FaultType; defenses: DefenseId[] } {
@@ -372,16 +372,33 @@ function Verdict({ data }: { data: Comparison }) {
   }
 
   if (defended) {
+    const contained = defended.summary.memoryContamination === 0;
+    const spread = defended.summary.propagationDepth > chaos.summary.propagationDepth;
     return (
-      <div className="verdict clean">
-        With <b>{activeDefense(defended)}</b> enabled, the same fault is caught at step{" "}
-        <span className="num">{defended.faults[0]?.detectedAtStep ?? "—"}</span> and blast radius
-        drops from <span className="num">{chaos.summary.propagationDepth}</span> events and{" "}
-        <span className="num">{chaos.summary.memoryContamination}</span> contaminated memories to{" "}
-        <span className="num">{defended.summary.propagationDepth}</span> and{" "}
-        <span className="num">{defended.summary.memoryContamination}</span>. Goal fidelity recovers
-        to <span className="num">{defended.summary.goalFidelity}</span> against a control of{" "}
-        {baseline.summary.goalFidelity}.
+      <div className={`verdict${contained ? " clean" : ""}`}>
+        With <b>{activeDefense(defended)}</b> enabled, the fault is caught at step{" "}
+        <span className="num">{defended.faults[0]?.detectedAtStep ?? "—"}</span> and goal fidelity
+        recovers to <span className="num">{defended.summary.goalFidelity}</span> against a control
+        of {baseline.summary.goalFidelity}.{" "}
+        {contained ? (
+          <>
+            Blast radius drops from <span className="num">{chaos.summary.propagationDepth}</span>{" "}
+            events and <span className="num">{chaos.summary.memoryContamination}</span>{" "}
+            contaminated memories to{" "}
+            <span className="num">{defended.summary.propagationDepth}</span> and{" "}
+            <span className="num">0</span>.
+          </>
+        ) : (
+          <>
+            But it blocks the <em>action</em> without repairing the <em>belief</em>:{" "}
+            <span className="num">{defended.summary.memoryContamination}</span> memories are still
+            contaminated, and because the agent keeps re-deriving from them, propagation{" "}
+            {spread ? "rises" : "stays"} at{" "}
+            <span className="num">{defended.summary.propagationDepth}</span> events — up from{" "}
+            <span className="num">{chaos.summary.propagationDepth}</span>. The business is
+            protected; the agent is still wrong.
+          </>
+        )}
       </div>
     );
   }

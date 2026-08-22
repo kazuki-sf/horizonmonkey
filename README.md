@@ -46,30 +46,50 @@ Every run is a controlled comparison: a control arm, a chaos arm, and a defended
 
 ```bash
 npm install
-npm run dev        # http://localhost:3579
-npm run sim        # the same comparison in the terminal, no browser
+npm run dev                     # http://localhost:3579
+npm run sim                     # the same comparison in the terminal, no browser
+npx tsx scripts/matrix.ts       # the full fault x defense matrix
+npx tsx scripts/trace.ts goal_mutation   # one full annotated trace
 ```
 
 No API key and no network access required — see *Why the agent is deterministic* below.
 
 ## Results
 
-24 logical steps ≈ five months of simulated growth work. Control run scores **95**.
+24 logical steps ≈ five months of simulated growth work. The control run — same agent, no
+fault — scores **95** and breaches no guardrail.
 
-| Fault | Control | Chaos | Propagation | Contaminated memory | Decisions / actions | Caught | Defended fidelity | Defended propagation | Defended contamination |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Stale observation | 95 | 72 | 8 | 2 | 1 / 1 | **no** | 96 | 6 | 0 |
-| Objective drift | 95 | **47** | 39 | 0 | 13 / 13 | **no** | 95 | 4 | 0 |
-| Caveat omission | 95 | **56** | 11 | 6 | 1 / 1 | **no** | 96 | 1 | 0 |
-| Metric drift | 95 | 73 | 13 | 1 | 2 / 2 | **no** | *74* | *13* | *1* |
+Cells are `goal fidelity · propagation depth / contaminated memories`:
 
-Reproduce with `npm run sim`; frozen traces are in [`runs/`](runs/).
+| Fault | no defense | Freshness validator | Objective re-anchor | Provenance auditor | all three |
+| --- | --- | --- | --- | --- | --- |
+| **Stale observation** | 72 · 8/2 | **96 · 6/0** | 71 · 14/5 | **95 · 6/0** | 96 · 6/0 |
+| **Objective drift** | **47** · 39/0 | 48 · 39/0 | **95 · 4/0** | 47 · 39/0 | 96 · 4/0 |
+| **Caveat omission** | **56** · 11/6 | **96 · 1/0** | 89 · 78/6 | **96 · 1/0** | 96 · 1/0 |
+| **Metric drift** | 73 · 13/1 | 74 · 13/1 | 76 · 58/1 | **95 · 6/0** | 96 · 6/0 |
 
-**Note the last row.** The freshness validator does not catch metric drift, and the
-number does not move. The drifted reading is fully matured and internally consistent, so
-a freshness check has nothing to object to; catching it needs cross-source
-reconciliation, which is not implemented. A harness whose defenses always work is not
-measuring anything, so that result is reported as-is in the UI rather than tuned away.
+Reproduce with `npm run sim` and `npx tsx scripts/matrix.ts`; frozen traces are in
+[`runs/`](runs/). Not one of the four faults was caught by any invariant in the undefended
+column, and every tool call in every run returned successfully.
+
+Three things fell out of the matrix that were not designed in:
+
+**Blocking the action is not the same as repairing the belief.** Objective re-anchor turns
+caveat omission from 56 into 89 — the business is protected, the bad rollout never
+ships. But contamination stays at 6 and propagation goes from 11 events to **78**, because
+the agent keeps re-deriving from the same corrupted memory and getting stopped at the
+gate every time. Business damage and semantic blast radius are different axes, and a
+mitigation can move them in opposite directions.
+
+**The invariant that catches a fault is not the one named after it.** The provenance
+auditor catches stale observations and metric drift as well as caveat omission — because
+what those faults actually do is make a result look strong enough to generalize past the
+segment it was measured on. The scope check sits downstream of all three.
+
+**Defenses have a cost.** The freshness validator records a false positive in several
+runs: it also blocks a legitimately immature reading of a genuinely good intervention.
+That is tracked (`falsePositives`) rather than hidden, because an invariant that fires on
+everything would score perfectly on this matrix and be useless in production.
 
 ## The four faults
 
