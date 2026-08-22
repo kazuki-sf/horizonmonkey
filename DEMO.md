@@ -84,10 +84,10 @@ Every state is a URL, so nothing depends on clicking correctly under pressure.
 
 ## If asked: "is the agent real, or scripted?"
 
-The policy is explicit code, not an LLM call — deliberately. It buys reproducibility
-(same fault, same blast radius, every time), a clean comparison (any difference between
-arms is caused by the fault, not sampling noise), and a demo that can't die on a rate
-limit.
+The policy is explicit code, not an LLM call — deliberately, to isolate semantic fault
+propagation from LLM sampling variance. It buys reproducibility (same fault, same blast
+radius, every time), a clean comparison (any difference between arms is caused by the
+fault, not sampling noise), and a demo that can't die on a rate limit.
 
 It is not a strawman. It weights impact by reach, checks guardrails before acting,
 attaches scope caveats and refuses to generalize bounded lessons, treats a guardrail
@@ -95,22 +95,40 @@ breach on any segment as evidence everywhere, caps concurrent experiments, and r
 beliefs when matured data lands. It has one ordinary weakness — **it checks its
 guardrails against its beliefs** — and that's the whole point.
 
-The instrumentation is independent of the policy. Swapping in an LLM means replacing two
-methods in `core/agent.ts`; nothing in the trace, provenance, taint or evaluator layer
-changes.
+It also implements `AgentPolicy` from `core/policy.ts`, and the loop gets its decision
+through that interface. `core/` compiles standalone and imports nothing outside itself —
+it has no idea what a conversion rate is. Swapping in an LLM policy means implementing
+three methods; the recorder, taint closure and metrics don't change.
+
+**Do not overclaim here.** These results characterize one instrumented decision process.
+They do not show an LLM-backed agent behaves identically — that's the first roadmap item,
+precisely because we don't know.
 
 ## If asked: "isn't this just provenance tracking?"
 
-Yes, and that's the honest framing — it's dependency lineage, not proven causation. But
-the injector holds the ground truth, so the lineage is *exact*, which is precisely what
+Yes, and that's the honest framing — dependency lineage, not proven causation. But the
+injector holds the ground truth, so the lineage is *exact*, which is precisely what
 post-hoc failure attribution (Who&When, FALAT) has to guess at over a long trajectory.
 Counterfactual replay — remove the fault at step k, re-run, diff — is the next step.
 
+## If asked: "isn't the 78 just an artifact of run length?"
+
+Partly, yes — say so first. Propagation depth counts tainted artifacts, so it grows with
+however many steps remain after injection, and the figures are only comparable across
+runs of equal length. The durable quantity is the belief's lifetime, which we report
+separately as the silent window. What the 78 shows is that the belief stayed live and
+load-bearing for the rest of the run; the specific number is length-dependent.
+
+Same discipline on the second finding: all three faults funnel through the same
+generalization heuristic in this scenario, so the provenance auditor catching all of them
+is partly by construction. The useful part is that the *invariant view* exists — organize
+defenses by violated invariant rather than by fault name — not the coverage number.
+
 ## If asked: "what would you do with a real agent?"
 
-Put HorizonMonkey between the agent and its observation, memory and tool layer as a
-proxy. Same instrumentation, same metrics, no simulated policy. Then: invariant
-synthesis — every failure trajectory already contains its own fix, since the freshness
-validator in `defenses.ts` is just the stale-observation failure written backwards.
-Then agent reliability CI: prompt change opens a PR, fifty chaos scenarios run,
-goal-fidelity regression fails the build.
+Put HorizonMonkey between the agent and its observation, memory and tool layer. Same
+instrumentation, same metrics, no simulated policy. Then: invariant synthesis — every
+failure trajectory already contains its own fix, since the freshness validator in
+`defenses.ts` is just the stale-observation failure written backwards. Then semantic
+resilience CI: prompt change opens a PR, N chaos scenarios run, goal-fidelity regression
+fails the build.
