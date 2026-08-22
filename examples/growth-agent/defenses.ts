@@ -1,6 +1,7 @@
-import type { DefenseId, Memory, Objective, Observation } from "./types";
-import type { ScoredCandidate } from "./agent";
-import { CANONICAL_OBJECTIVE, byId } from "../scenarios/growth";
+import type { DefenseVerdict } from "../../core/types";
+import type { DefenseId, Memory, Objective, Observation } from "./domain";
+import type { ScoredCandidate } from "./policy";
+import { CANONICAL_OBJECTIVE, byId } from "./world";
 
 // ============================================================================
 // Defenses.
@@ -14,14 +15,6 @@ import { CANONICAL_OBJECTIVE, byId } from "../scenarios/growth";
 // Reporting that honestly is more useful than a defense that claims to catch
 // everything.
 // ============================================================================
-
-export type DefenseVerdict = {
-  fired: boolean;
-  defense: DefenseId;
-  reason: string;
-  /** Fault ids carried by the artifact that tripped the check, if any. */
-  faultIds: string[];
-};
 
 export const DEFENSE_CATALOG: { id: DefenseId; label: string; blurb: string; catches: string }[] = [
   {

@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Comparison } from "../core/compare";
-import type { DefenseId, FaultType, RunResult, TraceEvent } from "../core/types";
+import type { Comparison } from "../examples/growth-agent/compare";
+import type { DefenseId, RunResult } from "../examples/growth-agent/domain";
+import type { FaultType, TraceEvent } from "../core/types";
 import type { GraphNode } from "../core/propagation";
 
 const FAULTS: { id: FaultType; label: string }[] = [

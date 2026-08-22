@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { compare } from "../../../core/compare";
-import type { DefenseId, FaultType } from "../../../core/types";
+import { compare } from "../../../examples/growth-agent/compare";
+import type { FaultType } from "../../../core/types";
+import type { DefenseId } from "../../../examples/growth-agent/domain";
 
 export const dynamic = "force-dynamic";
 

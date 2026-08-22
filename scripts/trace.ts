@@ -1,6 +1,6 @@
-import { runScenario } from "../core/run";
+import { runScenario } from "../examples/growth-agent/loop";
 import type { FaultType } from "../core/types";
-import { specFor } from "../core/faults";
+import { specFor } from "../examples/growth-agent/faults";
 const f = (process.argv[2] ?? "memory_poisoning") as FaultType;
 const r = runScenario({ scenario: "growth", faultType: f, faultStep: 0, faultTarget: specFor(f).defaultTarget, defenses: [], maxSteps: 24, engine: "deterministic" });
 for (const e of r.trace) {

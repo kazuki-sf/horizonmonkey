@@ -1,4 +1,4 @@
-import type { RunResult, TraceEvent } from "./types";
+import type { TraceEvent } from "./types";
 
 // ============================================================================
 // Taint propagation and blast radius.
@@ -53,18 +53,18 @@ export function blastGraph(trace: TraceEvent[]): GraphNode[] {
   }));
 }
 
-/** Extract the per-step decision signature used for baseline comparison. */
-export function decisionSignature(r: RunResult): (string | null)[] {
+/** Extract the per-step action signature used for baseline comparison. */
+export function decisionSignature(trace: TraceEvent[]): (string | null)[] {
   const out: (string | null)[] = [];
-  for (const ev of r.trace) {
+  for (const ev of trace) {
     if (ev.type !== "action") continue;
     out[ev.step] = String(ev.metadata?.key ?? ev.summary);
   }
   return out;
 }
 
-/** First step at which the two runs choose materially different actions. */
-export function firstDivergence(baseline: RunResult, chaos: RunResult): number | null {
+/** First step at which two runs choose materially different actions. */
+export function firstDivergence(baseline: TraceEvent[], chaos: TraceEvent[]): number | null {
   const a = decisionSignature(baseline);
   const b = decisionSignature(chaos);
   const n = Math.max(a.length, b.length);

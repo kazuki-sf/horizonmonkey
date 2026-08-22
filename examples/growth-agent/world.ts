@@ -1,4 +1,4 @@
-import type { Effect, Experiment, Objective, Segment } from "../core/types";
+import type { Effect, Experiment, Objective, Segment } from "./domain";
 
 // ============================================================================
 // Synthetic SaaS growth environment.

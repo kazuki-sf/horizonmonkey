@@ -1,7 +1,8 @@
-import { runScenario } from "../core/run";
+import { runScenario } from "../examples/growth-agent/loop";
 import { firstDivergence } from "../core/propagation";
-import type { DefenseId, FaultType } from "../core/types";
-import { specFor } from "../core/faults";
+import type { FaultType } from "../core/types";
+import type { DefenseId } from "../examples/growth-agent/domain";
+import { specFor } from "../examples/growth-agent/faults";
 
 const STEPS = 24;
 const base = (faultType: FaultType | "none", defenses: DefenseId[] = []) =>
@@ -10,7 +11,7 @@ const base = (faultType: FaultType | "none", defenses: DefenseId[] = []) =>
 const baseline = base("none");
 const show = (name: string, r: ReturnType<typeof runScenario>) => {
   const s = r.summary;
-  const div = firstDivergence(baseline, r);
+  const div = firstDivergence(baseline.trace, r.trace);
   console.log(`\n=== ${name} ===`);
   console.log(`  fidelity=${s.goalFidelity}  detected=${s.faultDetected}(lat=${s.detectionLatency})  prop=${s.propagationDepth}  mem=${s.memoryContamination}  dec=${s.affectedDecisions}  act=${s.affectedActions}  recov=${s.recovered}@${s.recoveryStep}  firstDiv=${div}`);
   console.log(`  final: ${s.finalRecommendation}`);

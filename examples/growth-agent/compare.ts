@@ -1,6 +1,7 @@
-import type { DefenseId, FaultType, RunResult } from "./types";
-import { runScenario } from "./run";
-import { blastGraph, firstDivergence, type GraphNode } from "./propagation";
+import type { FaultType } from "../../core/types";
+import { blastGraph, firstDivergence, type GraphNode } from "../../core/propagation";
+import type { DefenseId, RunResult } from "./domain";
+import { runScenario } from "./loop";
 import { specFor } from "./faults";
 
 // ============================================================================
@@ -45,7 +46,7 @@ export function compare(faultType: FaultType, defenses: DefenseId[]): Comparison
     : null;
 
   const injectedAt = chaos.faults[0]?.injectedAtStep ?? null;
-  const firstDiv = firstDivergence(baseline, chaos);
+  const firstDiv = firstDivergence(baseline.trace, chaos.trace);
   const firstTaintedAction =
     chaos.trace.find((e) => e.type === "action" && e.faultIds.length > 0)?.step ?? null;
 
@@ -60,7 +61,7 @@ export function compare(faultType: FaultType, defenses: DefenseId[]): Comparison
       : (chaos.summary.recoveryStep ?? MAX_STEPS) - injectedAt;
 
   if (defended) {
-    defended.summary.firstDivergenceStep = firstDivergence(baseline, defended);
+    defended.summary.firstDivergenceStep = firstDivergence(baseline.trace, defended.trace);
     defended.summary.silentFailureWindow =
       defended.faults[0] ? (defended.summary.recoveryStep ?? MAX_STEPS) - defended.faults[0].injectedAtStep : null;
   }

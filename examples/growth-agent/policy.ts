@@ -1,5 +1,6 @@
-import type { Effect, Guardrail, Memory, MetricKey, Objective, Observation, Segment } from "./types";
-import { INTERVENTIONS, REACH, byId } from "../scenarios/growth";
+import type { AgentPolicy } from "../../core/policy";
+import type { Effect, Guardrail, Memory, MetricKey, Objective, Observation, Segment } from "./domain";
+import { INTERVENTIONS, REACH, byId } from "./world";
 
 // ============================================================================
 // The growth agent's decision policy.
@@ -9,6 +10,11 @@ import { INTERVENTIONS, REACH, byId } from "../scenarios/growth";
 // objective is. That property is what makes the harness meaningful — if the
 // policy ignored its beliefs, corrupting them would prove nothing.
 //
+// It implements `AgentPolicy` from the harness (`core/policy.ts`): interpret an
+// observation into a belief, commit that belief, decide what to do next. An
+// LLM-backed policy implements the same three methods and returns the same
+// provenance; nothing in `core/` would change.
+//
 // The policy is also deliberately competent. It weights impact by reach, it
 // checks its guardrails before acting, it attaches scope caveats to lessons and
 // it refuses to generalize a bounded one. It is not a strawman. It has exactly
@@ -16,6 +22,14 @@ import { INTERVENTIONS, REACH, byId } from "../scenarios/growth";
 // ============================================================================
 
 export type Candidate = { intervention: string; segment: Segment };
+
+/** What the scenario's loop carries into each decision. */
+export type GrowthContext = {
+  step: number;
+  day: number;
+  /** Interventions with a live experiment — you do not re-run one already in flight. */
+  embargoed: Set<string>;
+};
 
 export type ScoredCandidate = Candidate & {
   score: number;
@@ -35,7 +49,11 @@ const PRIOR: Effect = { signup: 2, qualified: 2, retention: 0, revenue: 2 };
 
 const BOUNDED = /generaliz|replicat|only|scope/i;
 
-export class GrowthAgent {
+export class GrowthAgent
+  implements AgentPolicy<GrowthContext, Observation, Memory, ScoredCandidate>
+{
+  readonly id = "growth-agent/deterministic";
+
   memories: Memory[] = [];
   tried = new Set<string>();
   /**
@@ -172,7 +190,8 @@ export class GrowthAgent {
    */
   static readonly LAUNCH_FLOOR = 0.5;
 
-  decide(): ScoredCandidate | null {
+  decide(ctx: GrowthContext): ScoredCandidate | null {
+    this.embargoed = ctx.embargoed;
     const top = this.rank()[0];
     return top && top.score > GrowthAgent.LAUNCH_FLOOR ? top : null;
   }
@@ -189,7 +208,7 @@ export class GrowthAgent {
    * on SMB" to "a thing that works". That is a defensible heuristic and a very
    * common one. It is also the doorway every fault in this project walks through.
    */
-  lessonFrom(obs: Observation, step: number, memId: string): Memory {
+  interpret(obs: Observation, step: number, memId: string): Memory {
     const iv = byId(obs.intervention);
     const matured = obs.maturityDays >= iv.maturityDays;
     const strong = obs.effect.signup > 15 && obs.effect.retention > -3 && obs.effect.qualified >= 0;
@@ -225,7 +244,7 @@ export class GrowthAgent {
    * one for the same intervention. This is why the agent can eventually recover
    * on its own — and why recovery is not the same thing as undoing the damage.
    */
-  remember(m: Memory): Memory[] {
+  commit(m: Memory): Memory[] {
     // Compare when the data was actually computed, not what the readout claimed
     // to cover — otherwise a stale snapshot that lies about its window is never
     // superseded by the reading that would have corrected it.

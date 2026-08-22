@@ -1,7 +1,11 @@
 // ============================================================================
-// HorizonMonkey — core type model
+// HorizonMonkey — harness types.
 //
-// The harness separates three layers that agent codebases usually conflate:
+// Nothing in this file knows what domain it is measuring. These are the types
+// the instrumentation layer needs in order to record a trajectory, attach
+// provenance to it, and compute a semantic blast radius from that provenance.
+//
+// The layering the harness assumes:
 //
 //   CANONICAL WORLD STATE   what is actually true
 //          |
@@ -12,15 +16,12 @@
 //   PERCEIVED STATE         what the agent believes
 //
 // Every artifact the agent produces carries provenance (`inputIds`), so taint
-// from an injected fault can be propagated forward mechanically.
+// from an injected fault propagates forward mechanically rather than being
+// reconstructed after the fact.
+//
+// Domain types for the reference scenario live in
+// `examples/growth-agent/domain.ts`.
 // ============================================================================
-
-export type MetricKey = "signup" | "qualified" | "retention" | "revenue";
-
-/** Effect of an intervention, expressed as relative % change vs. control. */
-export type Effect = Record<MetricKey, number>;
-
-export type Segment = "enterprise" | "smb" | "developer" | "all";
 
 export type TraceEventType =
   | "observation"
@@ -52,6 +53,12 @@ export type TraceEvent = {
   metadata?: Record<string, unknown>;
 };
 
+/**
+ * Fault classes the harness knows how to account for. These name the *shape* of
+ * the corruption, not the domain: a stale observation is a stale observation
+ * whether the reading is a conversion rate or a sensor value. What a given fault
+ * looks like concretely is defined per scenario.
+ */
 export type FaultType =
   | "stale_observation"
   | "goal_mutation"
@@ -73,76 +80,22 @@ export type Fault = {
   recoveredAtStep?: number;
 };
 
-/** A durable lesson the agent has written to long-term memory. */
-export type Memory = {
-  id: string;
-  step: number;
-  intervention: string;
-  /** Scope the agent believes this lesson applies to. Widening it is the bug. */
-  scope: Segment;
-  effect: Effect;
-  /** Constraints attached to the lesson. Losing these is how over-generalization starts. */
-  caveats: string[];
-  confidence: number;
-  observedOnDay: number;
-  /** Days of data behind the reading. Retention needs ~30 to be meaningful. */
-  maturityDays: number;
-  sourceIds: string[];
+/** A defense firing. `faultIds` empty means it fired on a clean artifact. */
+export type DefenseVerdict = {
+  fired: boolean;
+  defense: string;
+  reason: string;
   faultIds: string[];
-  quarantined?: boolean;
 };
 
-export type Objective = {
-  primary: string;
-  /** Scoring weights the agent actually optimizes. */
-  weights: Partial<Record<MetricKey, number>>;
-  guardrails: Guardrail[];
-};
+/** One recorded defense activation, used to separate catches from false alarms. */
+export type Detection = { step: number; defense: string; faultIds: string[] };
 
-export type Guardrail = {
-  id: string;
-  metric: MetricKey;
-  /** Minimum tolerated relative change, e.g. -3 means "no worse than -3%". */
-  floor: number;
-  text: string;
-};
-
-export type Experiment = {
-  id: string;
-  intervention: string;
-  segment: Segment;
-  launchedOnDay: number;
-  /** Day the result is trustworthy for every metric, including laggards. */
-  maturesOnDay: number;
-  status: "running" | "completed";
-  trueEffect: Effect;
-  /**
-   * Whether the agent promoted the experiment to a permanent change. This is the
-   * decision that actually moves the business — running a losing test costs a
-   * slice of traffic for a few weeks, shipping a losing test costs everything.
-   */
-  shipped?: boolean;
-};
-
-export type DefenseId =
-  | "freshness_validator"
-  | "guardrail_checker"
-  | "provenance_auditor";
-
-export type RunConfig = {
-  scenario: string;
-  faultType: FaultType | "none";
-  faultStep: number;
-  /** Intervention the fault attaches to. Chaos experiments name a target, not a clock tick. */
-  faultTarget?: string;
-  defenses: DefenseId[];
-  maxSteps: number;
-  engine: "deterministic" | "llm";
-};
-
-export type RunSummary = {
-  goalFidelity: number;
-  fidelityBreakdown: { label: string; score: number; max: number; note: string }[];
+/**
+ * Blast-radius metrics. Every field here is computed from the trace and the
+ * fault ledger alone — no domain knowledge required.
+ */
+export type BlastRadius = {
   faultDetected: boolean;
   detectionLatency: number | null;
   propagationDepth: number;
@@ -152,43 +105,7 @@ export type RunSummary = {
   recovered: boolean;
   recoveryStep: number | null;
   falsePositives: number;
-  /** Steps the fault stayed latent before behavior visibly diverged. */
+  /** Steps the corrupted belief stayed load-bearing before anything corrected it. */
   silentFailureWindow: number | null;
   firstDivergenceStep: number | null;
-  finalRecommendation: string;
-  guardrailViolations: string[];
-  trueCumulative: Effect;
-};
-
-export type RunResult = {
-  runId: string;
-  config: RunConfig;
-  objectivePerceived: Objective;
-  objectiveCanonical: Objective;
-  faults: Fault[];
-  trace: TraceEvent[];
-  memories: Memory[];
-  launched: Experiment[];
-  summary: RunSummary;
-};
-
-/** What the observation layer hands the agent about one experiment readout. */
-export type Observation = {
-  id: string;
-  experimentId: string;
-  intervention: string;
-  segment: Segment;
-  status: "running" | "completed";
-  effect: Effect;
-  /** Day the reading was requested. */
-  readOnDay: number;
-  /** Day the underlying aggregate was actually computed. Diverges under cache staleness. */
-  computedOnDay: number;
-  /** Day the experiment started, used to reason about how much data is behind a reading. */
-  launchedOnDay: number;
-  /** Days of data behind the reading. */
-  maturityDays: number;
-  requiredMaturityDays: number;
-  note: string;
-  faultIds: string[];
 };

@@ -1,5 +1,5 @@
-import type { Effect, Experiment, Memory, RunSummary } from "./types";
-import { CANONICAL_OBJECTIVE, byId } from "../scenarios/growth";
+import type { Effect, Experiment, Memory, RunSummary } from "./domain";
+import { CANONICAL_OBJECTIVE, byId } from "./world";
 
 // ============================================================================
 // Goal fidelity.

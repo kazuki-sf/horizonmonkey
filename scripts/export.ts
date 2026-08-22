@@ -1,7 +1,8 @@
 import { writeFileSync } from "node:fs";
-import { compare } from "../core/compare";
-import type { DefenseId, FaultType } from "../core/types";
-import { specFor } from "../core/faults";
+import { compare } from "../examples/growth-agent/compare";
+import type { FaultType } from "../core/types";
+import type { DefenseId } from "../examples/growth-agent/domain";
+import { specFor } from "../examples/growth-agent/faults";
 
 // Freezes one run per fault, with and without its natural defense, so the
 // numbers in the README are reproducible without starting the server.

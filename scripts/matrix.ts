@@ -1,7 +1,7 @@
-import { compare } from "../core/compare";
-import { DEFENSE_CATALOG } from "../core/defenses";
-import { FAULT_CATALOG } from "../core/faults";
-import type { DefenseId } from "../core/types";
+import { compare } from "../examples/growth-agent/compare";
+import { DEFENSE_CATALOG } from "../examples/growth-agent/defenses";
+import { FAULT_CATALOG } from "../examples/growth-agent/faults";
+import type { DefenseId } from "../examples/growth-agent/domain";
 
 // The full fault x defense matrix. Printed as markdown for the README, because a
 // harness that only reports the pairings that work is not reporting anything.

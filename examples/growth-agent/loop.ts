@@ -1,28 +1,21 @@
+import type { Fault, FaultType, TraceEvent } from "../../core/types";
+import { TraceRecorder } from "../../core/trace";
+import { summarizeBlastRadius } from "../../core/metrics";
+import { propagate } from "../../core/propagation";
 import type {
-  DefenseId,
   Effect,
   Experiment,
-  Fault,
-  FaultType,
   Memory,
   Objective,
   Observation,
   RunConfig,
   RunResult,
-  TraceEvent,
-} from "./types";
-import { GrowthAgent, type ScoredCandidate } from "./agent";
-import { FaultInjector, specFor } from "./faults";
+} from "./domain";
+import { GrowthAgent, type GrowthContext, type ScoredCandidate } from "./policy";
+import { GrowthFaultInjector, specFor } from "./faults";
 import { checkAction, checkMemoryWrite } from "./defenses";
 import { scoreRun } from "./evaluator";
-import { propagate } from "./propagation";
-import {
-  CANONICAL_OBJECTIVE,
-  INTERVENTIONS,
-  SEED_HISTORY,
-  START_DAY,
-  byId,
-} from "../scenarios/growth";
+import { CANONICAL_OBJECTIVE, SEED_HISTORY, START_DAY, byId } from "./world";
 
 const DAYS_PER_STEP = 6;
 
@@ -57,9 +50,10 @@ const fmt = (e: Effect) =>
   `signup ${pct(e.signup)} · qualified ${pct(e.qualified)} · retention ${pct(e.retention)} · revenue ${pct(e.revenue)}`;
 
 export function runScenario(config: RunConfig): RunResult {
-  const trace: TraceEvent[] = [];
+  const recorder = new TraceRecorder();
+  const trace = recorder.events;
   const launched: Experiment[] = [...SEED_HISTORY];
-  const injector = new FaultInjector(config.faultType, config.faultStep, config.faultTarget);
+  const injector = new GrowthFaultInjector(config.faultType, config.faultStep, config.faultTarget);
 
   let objective: Objective = structuredClone(CANONICAL_OBJECTIVE);
   const agent = new GrowthAgent(objective);
@@ -67,21 +61,16 @@ export function runScenario(config: RunConfig): RunResult {
 
   let day = START_DAY;
   let expSeq = 200;
-  let seq = 0;
-  const nid = (p: string) => `${p}_${++seq}`;
+  const nid = (p: string) => recorder.id(p);
 
   const pending: Experiment[] = [...SEED_HISTORY];
   const reported = new Set<string>();
-  const detections: { step: number; defense: string; faultIds: string[] }[] = [];
   let recoveryStep: number | null = null;
   /** Once the objective is corrupted, every subsequent decision inherits from it. */
   let objectiveFaultId: string | null = null;
   let lastAction = "no action taken";
 
-  const push = (e: Omit<TraceEvent, "faultIds"> & { faultIds?: string[] }) => {
-    trace.push({ ...e, faultIds: e.faultIds ?? [] });
-    return e.id;
-  };
+  const push = (e: Omit<TraceEvent, "faultIds"> & { faultIds?: string[] }) => recorder.record(e);
 
   for (let step = 0; step < config.maxSteps; step++) {
     if (step > 0) day += DAYS_PER_STEP;
@@ -144,7 +133,7 @@ export function runScenario(config: RunConfig): RunResult {
 
       // ---- write the lesson to durable memory ------------------------------
       const memId = nid("mem");
-      let mem: Memory = agent.lessonFrom(seen, step, memId);
+      let mem: Memory = agent.interpret(seen, step, memId);
       mem = injector.maybeCorruptMemory(mem, step);
 
       if (mem.faultIds.length && config.faultType === "memory_poisoning") {
@@ -166,7 +155,7 @@ export function runScenario(config: RunConfig): RunResult {
       if (verdict) {
         mem.quarantined = true;
         agent.memories.push(mem);
-        detections.push({ step, defense: verdict.defense, faultIds: verdict.faultIds });
+        recorder.detect({ step, defense: verdict.defense, faultIds: verdict.faultIds });
         push({
           id: nid("det"),
           step,
@@ -201,7 +190,7 @@ export function runScenario(config: RunConfig): RunResult {
           });
         }
       } else {
-        const superseded = agent.remember(mem);
+        const superseded = agent.commit(mem);
         // ---- ship decision: make the winner permanent ----------------------
         if (agent.shouldShip(mem)) {
           matured.shipped = true;
@@ -276,12 +265,17 @@ export function runScenario(config: RunConfig): RunResult {
     }
 
     // ---- retrieve, hypothesize, decide ------------------------------------
-    agent.embargoed = new Set(
-      pending.filter((e) => !reported.has(e.id)).map((e) => e.intervention)
-    );
+    const ctx: GrowthContext = {
+      step,
+      day,
+      embargoed: new Set(pending.filter((e) => !reported.has(e.id)).map((e) => e.intervention)),
+    };
+    const chosen = agent.decide(ctx);
+    // `rank()` is read separately so the trace can show what the policy passed
+    // over, not just what it picked. The decision itself comes from `decide`.
     const ranked = agent.rank();
     const top = ranked[0];
-    if (!top || top.score <= GrowthAgent.LAUNCH_FLOOR) {
+    if (!chosen || !top) {
       push({
         id: nid("eval"),
         step,
@@ -320,7 +314,7 @@ export function runScenario(config: RunConfig): RunResult {
       metadata: { runnerUp: ranked[1] ? `${ranked[1].intervention}:${ranked[1].segment} (${ranked[1].score})` : null },
     });
 
-    let choice: ScoredCandidate = top;
+    let choice: ScoredCandidate = chosen;
     const decId = push({
       id: nid("dec"),
       step,
@@ -341,7 +335,7 @@ export function runScenario(config: RunConfig): RunResult {
     ];
     const actionVerdict = checkAction(config.defenses, objective, choice, inheritedFaults);
     if (actionVerdict) {
-      detections.push({ step, defense: actionVerdict.defense, faultIds: actionVerdict.faultIds });
+      recorder.detect({ step, defense: actionVerdict.defense, faultIds: actionVerdict.faultIds });
       push({
         id: nid("det"),
         step,
@@ -417,8 +411,9 @@ export function runScenario(config: RunConfig): RunResult {
 
   const faults: Fault[] = injector.faults;
   // A check firing on an artifact that carries no taint is a false positive, not
-  // a detection. Counting it as a catch would let a noisy invariant look effective.
-  const truePositive = detections.find((d) => d.faultIds.length > 0);
+  // a detection. `summarizeBlastRadius` applies the same rule; this copy exists
+  // only to stamp the fault ledger the UI reads.
+  const truePositive = recorder.detections.find((d) => d.faultIds.length > 0);
   if (truePositive && faults[0]) {
     faults[0].detectedAtStep = truePositive.step;
     faults[0].detectedBy = truePositive.defense;
@@ -426,26 +421,15 @@ export function runScenario(config: RunConfig): RunResult {
   }
 
   const scored = scoreRun(launched, agent.memories);
-  // Idle "waiting for traffic" ticks technically inherit taint because the
-  // ranking behind them read a contaminated belief. Counting them would inflate
-  // blast radius with events where the agent did nothing, so they are excluded.
-  const taintedEvents = trace.filter(
-    (e) => e.faultIds.length > 0 && !e.isFaultOrigin && e.type !== "evaluation"
-  );
   const summary = {
+    ...summarizeBlastRadius({
+      trace,
+      faults,
+      detections: recorder.detections,
+      recoveryStep,
+      maxSteps: config.maxSteps,
+    }),
     ...scored,
-    faultDetected: Boolean(truePositive),
-    detectionLatency:
-      truePositive && faults[0] ? truePositive.step - faults[0].injectedAtStep : null,
-    propagationDepth: taintedEvents.length,
-    memoryContamination: taintedEvents.filter((e) => e.type === "memory_write" && !e.quarantined).length,
-    affectedDecisions: taintedEvents.filter((e) => e.type === "decision").length,
-    affectedActions: taintedEvents.filter((e) => e.type === "action").length,
-    recovered: recoveryStep !== null,
-    recoveryStep,
-    falsePositives: detections.filter((d) => d.faultIds.length === 0).length,
-    silentFailureWindow: null as number | null,
-    firstDivergenceStep: null as number | null,
     finalRecommendation: lastAction,
   };
 
