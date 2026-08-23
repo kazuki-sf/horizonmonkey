@@ -10,8 +10,15 @@ and produces `arxiv-submission.tar.gz` containing paper.tex, results/limitations
 bodies, refs.bib, paper.bbl, and generated figures/macros.
 
 ## Provenance
-- Pre-registration commit (hypotheses, scenario, scoring, before any model call): a12b297
-- 1020 episodes, 0 transport failures, seeds derive from (model, condition, target, budget, run)
+- Experiment 1 pre-registration commit (before any model call): a12b297
+- Experiment 2 pre-registration commit (before any model call): 43bd40c
+- 1020 + 450 episodes + 150 probes, 0 failures; seeds derive from
+  (model, condition, target, budget, run); the seeded shuffle reproduces the
+  stored presentation order in 1620/1620 files
+- Episode files store seeds/order and all structured answers, not raw prompt
+  text (disclosed in Limitations); prompts reconstruct deterministically
+- Experiment 2's pre-registered H6/H7 metrics returned zero and are reported
+  as nulls; behavioral analyses are labeled exploratory in the text
 - Every number in the text is a generated macro; `analyze.py` recomputes all of
   them from raw episode JSON. The hostile sweep in the session log cross-checks
   each fraction in the PDF against analysis output.

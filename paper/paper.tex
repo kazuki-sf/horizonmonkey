@@ -9,6 +9,7 @@
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf}
 \input{figures/macros}
+\IfFileExists{figures/macros2.tex}{\input{figures/macros2}}{}
 
 \title{Verification Goes Where the Agent Is Already Looking:\\
 Intent-Aligned Triage of Inherited Memory Under Budget}
@@ -39,11 +40,24 @@ its caveat is missing than when it is present --- but the strength of this
 reallocation varies sharply across models at the same task, from near-always to
 near-never. Third, an explicit triage instruction (``prioritize consequential,
 insufficiently supported beliefs'') raises verification of the corrupted belief
-without closing the gap between models. No episode ends in a harmful final
-decision under our pre-registered rule (\TotalHarmful{}/\TotalEpisodes{}); the
-failure mode these measurements expose is epistemic, not behavioral. All
-scenarios, scoring rules, and hypotheses were committed before any model call;
-every number reproduces from released episode files with no API access.
+without closing the gap between models. A second pre-registered experiment
+then makes the unexamined belief load-bearing: the situation shifts
+mid-session, after the budget is spent, so the corrupted lesson comes under
+pressure. Our pre-registered strict failure metrics returned zero --- every
+model that walked into the corrupted direction also self-reported hedges, and
+such flags saturate --- but the exploratory behavioral split is stark and
+consistent across all six models: episodes whose earlier budget had recovered
+the lost caveat chose the corrupted direction 6\% of the time; episodes whose
+budget had missed it, 79\%; and the verification-steering instruction,
+randomized across arms, halved the behavioral rate one decision later. Asked
+separately to rate each memory's evidential support, the strongest verifiers
+do not describe the corrupted memory as weak, and the model that describes it
+as weak barely verifies it: stated evidence judgments and verification
+allocation dissociate in both directions. Across all 1{,}470 pre-registered
+episodes, no decision meets the strict harmful rule; the exposure these
+measurements document is epistemic and allocational. All scenarios, scoring
+rules, and hypotheses were committed before any model call; every number
+reproduces from released episode files with no API access.
 \end{abstract}
 
 \section{Introduction}
@@ -107,9 +121,26 @@ or missed depending on whether it lies in the agent's path.
 \item \textbf{Instructions help but do not equalize.} A triage invariant
 raises verification of the corrupted belief in every model that was not
 already at ceiling, and the between-model gap survives it.
-\item \textbf{No behavioral failures.} Under the pre-registered harmful-decision
-rule, \TotalHarmful{} of \TotalEpisodes{} episodes end badly. The exposure is
-epistemic: unexamined corrupted beliefs surviving into an agent's working state.
+\item \textbf{The cost arrives when the context shifts.} In a second
+pre-registered experiment the situation changes after the budget is spent,
+making the corrupted belief load-bearing. The pre-registered strict failure
+metrics return zero --- self-reported hedging saturates --- but exploratorily,
+phase-two behavior splits on what the earlier budget recovered:
+\XCondVK{}/\XCondVN{} corrupted-direction choices with the caveat in context
+versus \XCondUK{}/\XCondUN{} without, the same direction in every model, and
+the triage instruction (randomized) halves the rate
+(\XPriceDriftK{}/\XPriceDriftN{} $\to$ \XPriceTriageK{}/\XPriceTriageN{}).
+The study's only non-guarded moves into the corrupted direction occur under
+drift (\XUngDriftK{} vs.\ \XUngCleanK{} clean).
+\item \textbf{Stated judgment and allocation dissociate.} An audit probe
+shows the strongest verifiers do not rate the corrupted memory as weak, while
+the model that rates it weakest barely verifies it --- so neither
+introspective report nor allocation is a proxy for the other.
+\item \textbf{No strict behavioral failures.} Under the pre-registered
+harmful-decision rule, \TotalHarmful{} episodes of \TotalEpisodes{} in
+Experiment 1 and 0 of 450 in Experiment 2 end badly. The exposure is
+epistemic and allocational: unexamined corrupted beliefs surviving into the
+contexts an agent will later act from.
 \end{itemize}
 
 \section{Related Work}
@@ -231,6 +262,8 @@ Wilson 95\% intervals; pairwise contrasts use two-sided Fisher exact tests.
 \section{Results}
 % ---- filled from figures/macros.tex after the run completes ----
 \input{results_body}
+
+\input{phase2_body}
 
 \section{Limitations}
 \input{limitations_body}

@@ -127,6 +127,60 @@ for m in MODELS:
     mac(f"PRB{key}NamedK", named); mac(f"PRB{key}N", len(pg)); mac(f"PRB{key}StrictK", strict)
     print(f"  {m:<18} named-least-73 {named}/{len(pg)} · strictly-lowest {strict}/{len(pg)} · tied {tied}/{len(pg)}  vs verify-rate {vk}/{len(v1)}")
 
+print("\n== EXPLORATORY (labeled as such in the paper; pre-registered metrics above returned zero) ==")
+# phase-2 pricing choice as the behavioral endpoint
+for c in ["clean","drifted","drifted-triage"]:
+    g=[e for e in mains if e["cond"]==c]
+    k=sum(e["p2"]=="promotional_pricing" for e in g)
+    key={"clean":"Clean","drifted":"Drift","drifted-triage":"Triage"}[c]
+    mac(f"XPrice{key}K", k); mac(f"XPrice{key}N", len(g))
+# unguarded pricing (behavioral, not self-report)
+for c in ["clean","drifted","drifted-triage"]:
+    g=[e for e in mains if e["cond"]==c]
+    k=sum(e["p2"]=="promotional_pricing" and e["scale"]!="small_guarded_test" for e in g)
+    key={"clean":"Clean","drifted":"Drift","drifted-triage":"Triage"}[c]
+    mac(f"XUng{key}K", k)
+    print(f"  unguarded pricing · {c}: {k}/{len(g)}")
+gu_d=sum(e["p2"]=="promotional_pricing" and e["scale"]!="small_guarded_test" for e in gd)
+gu_c=sum(e["p2"]=="promotional_pricing" and e["scale"]!="small_guarded_test" for e in gc)
+pug=fisher(gu_d,len(gd)-gu_d,gu_c,len(gc)-gu_c)
+print(f"  unguarded pricing drifted vs clean Fisher p = {pug:.3g}")
+mac("XUngFisherP", ptex(pug))
+# the conditional: pricing choice by phase-1 verification, drifted arm
+a=[e for e in gd if e["v73"]]; b=[e for e in gd if not e["v73"]]
+ka=sum(e["p2"]=="promotional_pricing" for e in a); kb=sum(e["p2"]=="promotional_pricing" for e in b)
+pf=fisher(kb,len(b)-kb,ka,len(a)-ka)
+print(f"  pricing | verified {ka}/{len(a)} vs | unverified {kb}/{len(b)} · Fisher p={pf:.3g}")
+mac("XCondVK",ka); mac("XCondVN",len(a)); mac("XCondUK",kb); mac("XCondUN",len(b)); mac("XCondFisherP", ptex(pf))
+strata=[]
+for m in MODELS:
+    am=[e for e in a if e["model"]==m]; bm=[e for e in b if e["model"]==m]
+    strata.append((sum(e["p2"]=="promotional_pricing" for e in bm), len(bm), sum(e["p2"]=="promotional_pricing" for e in am), len(am)))
+pcm=cmh(strata)
+mac("XCondCMHP", ptex(pcm))
+print(f"  CMH stratified by model p = {pcm if pcm is None else format(pcm,'.3g')}")
+print("  per-model pricing choice by phase-1 verification (drifted arm):")
+for m in MODELS:
+    am=[e for e in a if e["model"]==m]; bm=[e for e in b if e["model"]==m]
+    kam=sum(e["p2"]=="promotional_pricing" for e in am); kbm=sum(e["p2"]=="promotional_pricing" for e in bm)
+    print(f"    {m:<18} verified: {kam}/{len(am)} · unverified: {kbm}/{len(bm)}")
+# randomized arm contrast on pricing choice
+strata=[]
+for m in MODELS:
+    am=[e for e in gd if e["model"]==m]; bm=[e for e in mains if e["cond"]=="drifted-triage" and e["model"]==m]
+    strata.append((sum(e["p2"]=="promotional_pricing" for e in am), len(am), sum(e["p2"]=="promotional_pricing" for e in bm), len(bm)))
+parm=cmh(strata)
+mac("XArmCMHP", ptex(parm))
+print(f"  randomized arm (drifted vs triage) pricing CMH p = {parm if parm is None else format(parm,'.3g')}")
+# drifted pricing choosers: components that killed the pre-registered conjunction
+gp=[e for e in gd if e["p2"]=="promotional_pricing"]
+mac("XDriftPricingN", len(gp))
+mac("XDriftPricingCites", sum(e["cites73"] for e in gp))
+mac("XDriftPricingUnc", sum(e["unc"] for e in gp))
+mac("XDriftPricingRisk", sum(e["risk"] for e in gp))
+mac("XDriftPricingGuard", sum(e["scale"]=="small_guarded_test" for e in gp))
+print(f"  drifted pricing choosers n={len(gp)}: cites73 {sum(e['cites73'] for e in gp)} · uncertainty-flag {sum(e['unc'] for e in gp)} · risk-flag {sum(e['risk'] for e in gp)} · guarded {sum(e['scale']=='small_guarded_test' for e in gp)}")
+
 print("\n== disclosures ==")
 pv=sum(e["p2_asked_verify"] for e in mains)
 print(f"  phase-2 answers that still listed verify ids (not honored, disclosed): {pv}/{len(mains)}")

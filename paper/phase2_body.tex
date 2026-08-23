@@ -1,4 +1,4 @@
-% ===== Experiment 2: filled from figures/macros2.tex =====
+% ===== Experiment 2 (numbers from figures/macros2.tex) =====
 \subsection{Why intent-aligned allocation is locally rational --- and when it stops being so}
 \label{sec:theory}
 
@@ -19,9 +19,8 @@ where $c$ ranges over the \emph{future contexts the belief will survive into},
 and $L$ is the loss averted by catching the corruption before acting in $c$.
 A single-decision agent truncates the sum to the present context; a
 long-horizon agent should not, because durable memory outlives the decision
-that happened to be on the desk when the budget was spent. The experiments so
-far measure the truncated policy. Experiment 2 measures its cost: it makes one
-of the discounted future contexts arrive.
+that happened to be on the desk when the budget was spent. Experiment 2 makes
+one of the truncated contexts arrive.
 
 \subsection{Experiment 2: the unexamined belief becomes load-bearing}
 
@@ -31,64 +30,72 @@ prices again, churn among price-sensitive SMB accounts doubles, and leadership
 wants a response \emph{today} --- with the verification budget spent. The
 corrupted belief is now squarely decision-relevant, and whether its lost
 caveat is in the agent's context depends entirely on how the phase-1 budget
-was allocated. We run \PTwoMainN{} two-phase episodes (six models $\times$
-three arms $\times$ 25), pre-registered as H6--H8 with scoring fixed in
-advance. \emph{Reliance} on the corrupted lesson means: promotional pricing
-chosen, the corrupted memory cited as evidence, and no uncertainty preserved.
-The strict \emph{harmful} rule additionally requires more than a small guarded
-test and that the corrupted memory was never verified.
+was allocated. We ran \PTwoMainN{} two-phase episodes (six models $\times$
+three arms $\times$ 25) plus \PTwoProbeN{} single-call audit probes,
+pre-registered as H6--H8 with scoring fixed before any call. Phase-2
+verification requests are declined by design; \PTwoAskedVerifyK{} of
+\PTwoMainN{} phase-2 answers still listed lookup ids, which were not honored.
 
-\paragraph{The caveat's visible presence prevents what its silent absence
-permits (H7).}
-Under drift, phase-2 reliance occurs in \PTwoRelDriftK{}/\PTwoRelDriftN{}
-episodes and the strict harmful rule fires in
-\PTwoHarmDriftK{}/\PTwoHarmDriftN{} --- the first behavioral failures anywhere
-in this study. In the clean arm, with the caveat visible in the inherited
-memory itself, reliance is \PTwoRelCleanK{}/\PTwoRelCleanN{} and harm is
-\PTwoHarmCleanK{}/\PTwoHarmCleanN{} (clean vs.\ drifted harm,
-$p = \PTwoHarmFisherP$). Nothing about the phase-2 pressure forces the
-mistake: models facing the same ultimatum with the caveat intact hedge, guard,
-or choose differently.
+\paragraph{The pre-registered failure metrics returned zero --- and the reason
+is itself a finding.}
+Pre-registered \emph{reliance} (pricing chosen, corrupted memory cited, no
+uncertainty preserved) fired in \PTwoRelDriftK{}/\PTwoRelDriftN{} drifted
+episodes; the strict \emph{harmful} rule in
+\PTwoHarmDriftK{}/\PTwoHarmDriftN{}. As specified, H6 and H7 are
+\textbf{not supported}. The decomposition explains why: of the
+\XDriftPricingN{} drifted episodes whose phase-2 choice \emph{was} promotional
+pricing, all \XDriftPricingCites{} cited the corrupted memory as evidence ---
+and all \XDriftPricingUnc{} also set the uncertainty flag, \XDriftPricingRisk{}
+flagged downstream risk. Self-reported hedging saturates: a conjunction that
+requires its absence can never fire, regardless of what the agent actually
+does. Behavioral fields tell a different story, and everything that follows is
+\textbf{exploratory}, stated as such.
 
-\paragraph{Phase-1 verification protects phase 2 (H6).}
-The randomized comparison is between the drifted and drifted-triage arms:
-identical lineage, identical phase-2 ultimatum, differing only in the
-one-sentence triage invariant that (Experiment 1) lifts verification of the
-corrupted memory. Reliance moves from \PTwoRelDriftK{}/\PTwoRelDriftN{} to
-\PTwoRelTriageK{}/\PTwoRelTriageN{} (CMH stratified by model,
-$p = \PTwoArmCMHP$), and harm from \PTwoHarmDriftK{} to \PTwoHarmTriageK{}
-episodes. The self-selected conditional points the same way --- reliance in
-\PTwoCondUK{}/\PTwoCondUN{} of drifted episodes whose budget missed the
-corrupted memory, against \PTwoCondVK{}/\PTwoCondVN{} of those that reached it
-(CMH $p = \PTwoCondCMHP$) --- but models that verify differ from models that
-do not, so we lead with the randomized contrast.
+\paragraph{Exploratory: what the agent knows at phase 2 governs where it
+walks.}
+In the drifted arm, \XPriceDriftK{}/\XPriceDriftN{} of phase-2 decisions chose
+promotional pricing. Conditioned on the phase-1 budget: episodes whose budget
+reached the corrupted memory --- putting the recovered source record, caveat
+included, into context --- chose pricing \XCondVK{}/\XCondVN{} of the time;
+episodes whose budget missed it, \XCondUK{}/\XCondUN{} (CMH stratified by
+model, $p = \XCondCMHP$). The direction is the same in \emph{every} model
+(e.g., Luna 18/18 unverified vs.\ 1/7 verified; Haiku 16/16 vs.\ 3/9; Sonnet
+5/9 vs.\ 0/16). Because verification is self-selected, we also use the
+randomized contrast: the drifted-triage arm differs from drifted only by the
+one-sentence invariant, and its phase-2 pricing rate is
+\XPriceTriageK{}/\XPriceTriageN{} against \XPriceDriftK{}/\XPriceDriftN{}
+(CMH $p = \XArmCMHP$). A rule written to steer \emph{verification} halved a
+\emph{behavioral} rate one decision later.
 
-\paragraph{Knowing is not allocating (H8).}
-A separate probe hands each model the drifted lineage and asks it to rate how
-well-supported each inherited memory is for the stated objective --- no
-budget, no decision, order randomized as always. If low verification reflected
-a failure to \emph{notice} the corrupted memory's weakness, the ratings should
-miss it too. Table~\ref{tab:probe} reports, per model, how often the corrupted
-memory is named least-supported in the audit against how often the same
-model's phase-1 budget actually reached it.
+The only non-guarded pricing actions in the study occur here: \XUngDriftK{} in
+the drifted arm (of which \XUngTriageK{} remain under triage) against
+\XUngCleanK{}/150 in clean (Fisher $p = \XUngFisherP$). In the clean arm,
+\XPriceCleanK{}/\XPriceCleanN{} phase-2 decisions still chose pricing --- with
+the caveat visible, every one of them as a guarded test with downstream risk
+flagged. Choosing the pricing direction under competitive pressure is not
+itself the failure; walking into it unguarded, on the strength of a lesson
+whose warning silently vanished, is --- and that happens only under drift. We
+also note, without a clean within-arm comparison to back it, that a
+\emph{retrieved} source record suppresses the corrupted direction far more
+strongly (\XCondVK{}/\XCondVN{}) than the same caveat sitting passively in
+inherited memory (\XPriceCleanK{}/\XPriceCleanN{} choose pricing); recency and
+salience of provenance, not mere availability, may be doing the work.
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{lccc}
-\toprule
-Model & Named least-supported & Strictly lowest rating & Verified at $k{=}2$ (Exp.~1) \\
-\midrule
-Claude Opus 5    & \PRBopusNamedK{}/\PRBopusN{}     & \PRBopusStrictK{}/\PRBopusN{}   & \VopusDriftK{}/\VopusDriftN{} \\
-Claude Sonnet 5  & \PRBsonnetNamedK{}/\PRBsonnetN{} & \PRBsonnetStrictK{}/\PRBsonnetN{} & \VsonnetDriftK{}/\VsonnetDriftN{} \\
-Claude Haiku 4.5 & \PRBhaikuNamedK{}/\PRBhaikuN{}   & \PRBhaikuStrictK{}/\PRBhaikuN{} & \VhaikuDriftK{}/\VhaikuDriftN{} \\
-GPT-5.6 Sol      & \PRBsolNamedK{}/\PRBsolN{}       & \PRBsolStrictK{}/\PRBsolN{}     & \VsolDriftK{}/\VsolDriftN{} \\
-GPT-5.6 Terra    & \PRBterraNamedK{}/\PRBterraN{}   & \PRBterraStrictK{}/\PRBterraN{} & \VterraDriftK{}/\VterraDriftN{} \\
-GPT-5.6 Luna     & \PRBlunaNamedK{}/\PRBlunaN{}     & \PRBlunaStrictK{}/\PRBlunaN{}   & \VlunaDriftK{}/\VlunaDriftN{} \\
-\bottomrule
-\end{tabular}
-\caption{The knowledge--allocation gap. Asked to audit the drifted lineage
-with no budget at stake, models rate the corrupted memory least-supported far
-more often than their own scarce verification reaches it.}
-\label{tab:probe}
-\end{table}
+\paragraph{H8: stated support judgments dissociate from allocation --- in both
+directions.}
+The audit probe (rate each memory's evidential support; no budget, no
+decision) was pre-registered expecting stated ratings to identify the
+corrupted memory more often than scarce verification reaches it. That holds
+for exactly one model --- Haiku names it least-supported
+\PRBhaikuNamedK{}/\PRBhaikuN{} while verifying it \VhaikuDriftK{}/\VhaikuDriftN{}
+--- and is \emph{reversed} for the strongest verifiers: Sol names it
+\PRBsolNamedK{}/\PRBsolN{} yet verifies it \VsolDriftK{}/\VsolDriftN{}; Opus
+\PRBopusNamedK{}/\PRBopusN{} vs.\ \VopusDriftK{}/\VopusDriftN{}; Terra
+\PRBterraNamedK{}/\PRBterraN{} vs.\ \VterraDriftK{}/\VterraDriftN{} (these
+three overwhelmingly rate the vaguest memory, activation messaging, as least
+supported). H8 as pre-registered is \textbf{mostly not supported}; what the
+probe reveals instead is a double dissociation: models that verify the
+corrupted memory do not describe it as weak when asked, and the model that
+describes it as weak does not spend its budget on it. Reflective
+evidence-rating and verification allocation appear to be governed by different
+processes, and neither is a reliable proxy for the other.
