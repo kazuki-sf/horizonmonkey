@@ -38,6 +38,14 @@ const DEFENSES: { id: DefenseId; label: string; oracle?: boolean }[] = [
   { id: "guardrail_checker", label: "Objective re-anchor (simulator-only)" },
 ];
 
+/** The invariant written for each fault — the one the rewind reaches for. */
+const NATURAL_DEFENSE: Record<FaultType, DefenseId> = {
+  memory_poisoning: "provenance_auditor",
+  stale_observation: "freshness_validator",
+  numeric_perturbation: "provenance_auditor",
+  goal_mutation: "guardrail_checker",
+};
+
 /** Hold ticks are steps where the agent did nothing but wait for traffic. */
 const isNoise = (e: TraceEvent) => e.type === "evaluation";
 
@@ -72,8 +80,8 @@ function lineClass(e: TraceEvent) {
  * is pressed. `&autorun=1` is the one explicit opt-out of that, kept as a stage
  * fallback and for automated checks; it is never the default path.
  */
-function fromUrl(): { fault: FaultChoice; defense: DefenseId | ""; autorun: boolean } {
-  if (typeof window === "undefined") return { fault: "none", defense: "", autorun: false };
+function fromUrl(): { fault: FaultChoice; defense: DefenseId | ""; autorun: boolean; compare: boolean } {
+  if (typeof window === "undefined") return { fault: "none", defense: "", autorun: false, compare: false };
   const q = new URLSearchParams(window.location.search);
   const f = q.get("fault") as FaultChoice | null;
   const d = q.get("defense") as DefenseId | null;
@@ -81,6 +89,7 @@ function fromUrl(): { fault: FaultChoice; defense: DefenseId | ""; autorun: bool
     fault: FAULTS.some((x) => x.id === f) ? (f as FaultChoice) : "none",
     defense: DEFENSES.some((x) => x.id === d) ? (d as DefenseId) : "",
     autorun: q.get("autorun") === "1",
+    compare: q.get("compare") === "1",
   };
 }
 
@@ -185,13 +194,34 @@ function groupSteps(events: TraceEvent[]): StepGroup[] {
     });
 }
 
+/**
+ * Longest identical prefix of two traces, compared event by event on the fields
+ * the run actually produced. This is measured, never assumed: for caveat
+ * omission the prefix runs *past* the injection, so the two futures genuinely
+ * share a history including the fault. For stale observation it does not — the
+ * freshness validator also fires on a legitimately immature reading earlier in
+ * the run, so the arms separate before the fault is even injected. The UI says
+ * different things in those two cases.
+ */
+function sharedPrefix(a: TraceEvent[], b: TraceEvent[]) {
+  let i = 0;
+  while (i < Math.min(a.length, b.length) && a[i].type === b[i].type && a[i].summary === b[i].summary && a[i].step === b[i].step) i++;
+  const faultIdx = a.findIndex((e) => e.isFaultOrigin);
+  return {
+    count: i,
+    lastStep: i > 0 ? a[i - 1].step : -1,
+    /** True only when the arms were still identical after the fault landed. */
+    includesFault: faultIdx >= 0 && i > faultIdx,
+  };
+}
+
 /** Steps worth leaving open after they finish. Routine work collapses. */
 const isNotable = (g: StepGroup) => g.status !== "healthy";
 
 export default function Page() {
   const initial =
     typeof window === "undefined"
-      ? { fault: "none" as FaultChoice, defense: "" as DefenseId | "", autorun: false }
+      ? { fault: "none" as FaultChoice, defense: "" as DefenseId | "", autorun: false, compare: false }
       : fromUrl();
   const [fault, setFault] = useState<FaultChoice>(initial.fault);
   const [defense, setDefense] = useState<DefenseId | "">(initial.defense);
@@ -203,6 +233,8 @@ export default function Page() {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Manual expand/collapse overrides. Cleared on replay and on a new run. */
   const [manual, setManual] = useState<Record<number, boolean>>({});
+  /** "compare" shows the two futures side by side instead of one timeline. */
+  const [mode, setMode] = useState<"single" | "compare">("single");
 
   /** Which arm of the comparison is on screen. */
   const arm: "baseline" | "chaos" | "defended" =
@@ -250,6 +282,7 @@ export default function Page() {
     setCursor(-1);
     setManual({});
     setPlaying(false);
+    setMode("single");
     const res = await fetch("/api/run", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -262,7 +295,8 @@ export default function Page() {
     });
     setData(await res.json());
     setBusy(false);
-    setPlaying(true);
+    setPlaying(!initial.compare);
+    if (initial.compare) setMode("compare");
     const q = new URLSearchParams();
     if (fault !== "none") q.set("fault", fault);
     if (defense) q.set("defense", defense);
@@ -277,6 +311,28 @@ export default function Page() {
     booted.current = true;
     void execute();
   }, [execute, initial.autorun]);
+
+  /**
+   * Rewind: run the identical fault again with one defense added, then show
+   * where the two futures separate. The original run is not altered — the API
+   * returns both arms, so nothing is recomputed differently.
+   */
+  const rewind = useCallback(async () => {
+    stop();
+    const d = NATURAL_DEFENSE[fault as FaultType];
+    setBusy(true);
+    const res = await fetch("/api/run", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ faultType: fault, defenses: [d] }),
+    });
+    setData(await res.json());
+    setDefense(d);
+    setBusy(false);
+    setPlaying(false);
+    setCursor(-1);
+    setMode("compare");
+  }, [fault]);
 
   const replay = () => {
     stop();
@@ -379,6 +435,16 @@ export default function Page() {
             <button className="mini-btn" onClick={replay}>
               ↻ replay
             </button>
+            {done && fault !== "none" && !defense && (
+              <button className="rewind-btn" onClick={rewind} disabled={busy}>
+                ↺ REWIND &amp; ADD DEFENSE
+              </button>
+            )}
+            {mode === "compare" && (
+              <button className="mini-btn" onClick={() => setMode("single")}>
+                ← back to timeline
+              </button>
+            )}
             {[0.5, 1, 2].map((s) => (
               <button key={s} className="mini-btn" data-on={speed === s} onClick={() => setSpeed(s)}>
                 {s}×
@@ -431,6 +497,9 @@ export default function Page() {
         </div>
       ) : (
         <>
+          {mode === "compare" && data!.defended ? (
+            <Counterfactual data={data!} />
+          ) : (
           <div className="stage">
             <div className="term">
               <div className="term-bar">
@@ -587,7 +656,9 @@ export default function Page() {
             </div>
           </div>
 
-          {arm === "defended" && data!.defended && (
+          )}
+
+          {mode !== "compare" && arm === "defended" && data!.defended && (
             <div className="panel" style={{ marginTop: 16 }}>
               <h2>
                 Same fault, one invariant<em>{DEFENSES.find((d) => d.id === defense)?.label}</em>
@@ -686,6 +757,96 @@ export default function Page() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Two futures from one fault. Everything shown is trace-derived: the shared
+ * prefix is measured, and each branch lists only the events that actually
+ * differ, so this is a comparison rather than two logs printed next to each other.
+ */
+function Counterfactual({ data }: { data: Comparison }) {
+  const A = data.chaos.trace.filter((e) => !isNoise(e));
+  const B = data.defended!.trace.filter((e) => !isNoise(e));
+  const pre = sharedPrefix(A, B);
+  const branch = (t: TraceEvent[]) =>
+    t.slice(pre.count).filter((e) => e.faultIds.length > 0 || e.type === "fault_detection" || e.type === "recovery" || e.type === "action").slice(0, 6);
+
+  const cs = data.chaos.summary;
+  const ds = data.defended!.summary;
+  const metric = (label: string, a: number | string, b: number | string, better: "low" | "high") => {
+    const good = better === "low" ? Number(b) <= Number(a) : Number(b) >= Number(a);
+    return (
+      <div className="cf-metric" key={label}>
+        <div className="cf-label">{label}</div>
+        <div className="cf-nums">
+          <span className="bad">{a}</span>
+          <span className="arrow">→</span>
+          <span className={good ? "ok" : "bad"}>{b}</span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="cf">
+      <div className="cf-prefix">
+        {pre.includesFault ? (
+          <>
+            <b>SHARED HISTORY</b> — the first {pre.count} events are identical through step{" "}
+            {String(pre.lastStep).padStart(2, "0")}, <em>including the injection itself</em>. Same
+            agent, same fault, same history. Only the defense differs after this point.
+          </>
+        ) : (
+          <>
+            <b>MATCHED REPLAY</b> — same fault, alternate defense. These two runs are{" "}
+            <em>not</em> identical up to the injection: the invariant fires earlier in the run, so
+            the arms separate at event {pre.count} before the fault lands. Not a clean
+            counterfactual — read it as two runs of the same scenario.
+          </>
+        )}
+      </div>
+
+      <div className="cf-split">
+        <div className="cf-branch bad">
+          <h4>No defense</h4>
+          {branch(A).map((e) => (
+            <div key={e.id} className={`cf-ev ${e.faultIds.length ? (e.type === "action" ? "harm" : "taint") : ""}`}>
+              <span className="cf-g">{glyph(e)}</span>
+              <span className="cf-s">s{String(e.step).padStart(2, "0")}</span>
+              <span>{e.summary}</span>
+            </div>
+          ))}
+        </div>
+        <div className="cf-mid">
+          <div className="cf-node">⚡</div>
+          <div className="cf-line" />
+          <div className="cf-caption">divergence</div>
+        </div>
+        <div className="cf-branch ok">
+          <h4>{DEFENSES.find((d) => d.id === data.defended!.config.defenses[0])?.label}</h4>
+          {branch(B).map((e) => (
+            <div key={e.id} className={`cf-ev ${e.type === "fault_detection" || e.type === "recovery" ? "save" : ""}`}>
+              <span className="cf-g">{glyph(e)}</span>
+              <span className="cf-s">s{String(e.step).padStart(2, "0")}</span>
+              <span>{e.summary}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="cf-metrics">
+        {metric("Goal fidelity", cs.goalFidelity, ds.goalFidelity, "high")}
+        {metric("Contaminated memories", cs.memoryContamination, ds.memoryContamination, "low")}
+        {metric("Tainted decisions", cs.affectedDecisions, ds.affectedDecisions, "low")}
+        {metric("Guardrails breached", cs.guardrailViolations.length, ds.guardrailViolations.length, "low")}
+        {metric("Fault detected", cs.faultDetected ? "yes" : "no", ds.faultDetected ? "yes" : "no", "high")}
+      </div>
+      <div className="cf-foot">
+        Control run with no fault scores {data.baseline.summary.goalFidelity}. Both arms above ran
+        the same deterministic agent against the same world.
+      </div>
     </div>
   );
 }
