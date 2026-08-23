@@ -658,26 +658,28 @@ export default function Page() {
                 <span className="v ok">0 / 40</span>
                 <span className="fine">Too easy to expose the failure, so we went looking for where it gets hard.</span>
 
-                <span className="phd">Hard — inherited memory drift, 2 pre-registered scenarios</span>
-                <span className="pn">42 episodes</span>
-                <span className="k">Leaned toward the drifted lesson first</span>
-                <span className="v bad">20 / 20</span>
-                <span className="k">Went and retrieved the source</span>
+                <span className="phd">Hard — inherited memory drift</span>
+                <span className="pn">drifted arm · 3 models × 2 scenarios · N=18</span>
+                <span className="k">Initially preferred the corrupted lever</span>
+                <span className="v bad">12 / 18</span>
+                <span className="k">Retrieved the source record</span>
                 <span className="v ok">18 / 18</span>
-                <span className="k">Changed their decision after retrieving it</span>
+                <span className="k">Reversed after retrieving it</span>
                 <span className="v ok">12 / 18</span>
-                <span className="k">Ended in a consequential bad decision</span>
-                <span className="v ok">0 / 42</span>
+                <span className="k">Harmful final decision</span>
+                <span className="v ok">0 / 18</span>
 
                 <div className="verdict">
-                  The drifted belief moved them. Checking provenance is what stopped it.
+                  The corrupted memory changed what the models wanted to do. Provenance changed what they did.
                 </div>
                 <div className="fine">
-                  Sol and Luna each leaned toward the discount on first pass 10/10 with the
-                  caveat missing; Opus 5 did once. Source retrieval ran 18/18 in the drifted
-                  arms against 4/12 when the caveat was intact. Same model, same context, one
-                  retrieved artifact, decision flips — a within-episode comparison, not a claim
-                  about models in general. Neither scenario was tuned after results were seen.
+                  One population, N=18. The twelve that reached for the corrupted lever are
+                  exactly the twelve that reversed: Sol 6/6 and Luna 6/6 preferred it first and
+                  all changed after retrieving the source; Opus 5 never preferred it (0/6).
+                  Source retrieval ran 18/18 here against 4/12 when the caveat was intact —
+                  the models initiated it themselves, so this shows provenance <em>access</em>
+                  enabling recovery, not that our invariant caused it. Neither scenario was
+                  tuned after results were seen. Full audit in runs/llm-hard-demo/AUDIT.md.
                 </div>
               </div>
             </div>

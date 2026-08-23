@@ -197,17 +197,27 @@ shown; nothing marks the omission.
 | Retrieved the source record | 4/12 | **18/18** | 12/12 |
 | Decision changed after retrieval | 2/4 | **12/18** | 10/12 |
 
-**Zero bad decisions again — but the zero is not the finding.** In the drifted
-arms GPT-5.6 Sol and Luna leaned toward the discount on their first pass
-**10/10 and 10/10**; Opus 5 did once in ten. The belief with the caveat missing
-was doing exactly what the thesis predicts. What prevented the bad outcome was
-that every drifted episode went and retrieved the source — 18/18, against 4/12
-when the caveat was intact — and retrieval flipped the decision in 12 of 18.
+**Zero harmful decisions again — but the zero is not the finding.** Reading the
+drifted arm only, one population of 18: **12/18 preferred the corrupted lever on
+their first pass**, before any source was retrieved. All 18 then went and
+retrieved the source, and **the same 12 reversed** — the set that wanted it and
+the set that changed are identical. Split by model: `gpt-5.6-sol` 6/6 and
+`gpt-5.6-luna` 6/6 preferred it first and all reversed; `claude-opus-5` never
+preferred it (0/6) and so never had anything to reverse.
 
 That is a within-episode comparison: same model, same context, one retrieved
-artifact, decision changes. It is not a claim that any model is safe, and it is
-not a ranking. It says the mechanism reproduces in a real model and that
-provenance is what closes it.
+artifact, decision changes. Two limits on how far it can be pushed. The models
+initiated retrieval **themselves** — 18/18 in the drifted arm against 4/12 when
+the caveat was intact — so this shows that *access* to provenance enabled
+recovery, not that our explicit invariant caused it; the invariant arm has no
+headroom left to demonstrate anything. And nothing here shows a model failing:
+the harmful-decision count is 0/18. The defensible claim is that the corrupted
+memory changed what the models wanted to do, and provenance changed what they
+did.
+
+Every number above is recomputed from the saved episodes by
+[`scripts/llm-hard-audit.ts`](scripts/llm-hard-audit.ts); the per-model,
+per-condition breakdown is in [`runs/llm-hard-demo/AUDIT.md`](runs/llm-hard-demo/AUDIT.md).
 
 The first version of this scenario was **invalid, and is reported as such**: no
 model ever selected the corrupted option, because the situation made a different

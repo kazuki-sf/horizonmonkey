@@ -123,18 +123,22 @@ failures would not be measuring anything.
 **So we asked where it gets hard.** Two pre-registered scenarios — scenario and
 scoring committed before any model ran — where an agent inherits organizational
 memory 45 logical days later and one true caveat did not survive compaction.
-42 episodes, still zero bad decisions. But: **GPT-5.6 Sol and Luna each leaned
-toward the discount on their first pass 10 out of 10 times.** The belief was
-doing exactly what we said it would. What stopped it was that every drifted
-episode went and retrieved the source — 18/18, versus 4/12 when the caveat was
-intact — and that retrieval changed the decision 12 times out of 18.
+42 episodes, still zero harmful decisions. But in the drifted arm — one
+population, 18 episodes — **12 of 18 reached for the corrupted lever on their
+first pass**, before retrieving anything. All 18 then went and checked the
+source, and the same 12 reversed. Sol and Luna preferred it 6/6 each and both
+reversed every time; Opus 5 never preferred it.
 
-Same model, same context, one retrieved artifact, decision flips. The mechanism
-reproduces. Provenance is what closes it. That is the line:
+Same model, same context, one retrieved artifact, decision flips. Be careful
+with the credit: the models went and checked on their own, so this shows
+provenance *access* mattering, not our invariant working. And no model actually
+failed. The line that holds:
 
-> We didn't give the agent a false fact. We let a true caveat disappear across
-> generations of memory — and two of three models reached for the wrong lever
-> before they checked where the lesson came from.
+> The corrupted memory changed what the models wanted to do. Provenance changed
+> what they did.
+
+Do **not** say "frontier models made catastrophic semantic failures." They did
+not — 0 harmful final decisions in 42 episodes.
 
 ## If asked: "is the agent real, or scripted?"
 
