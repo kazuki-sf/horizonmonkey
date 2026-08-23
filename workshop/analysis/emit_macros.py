@@ -102,6 +102,17 @@ for arm,tag in TAG.items():
     k,n = v(mis(arm))
     mac(f"Four{tag}K",k); mac(f"Four{tag}N",n); mac(f"Four{tag}Pct", f"{100*k/n:.0f}" if n else "0")
 def c4(a1,a2,tag):
+    # pre-registered contrast: all episodes
+    stM = []
+    for m in MODELS:
+        k1,n1 = v([e for e in C if e["model"]==m and e["arm"]==a1]); k2,n2 = v([e for e in C if e["model"]==m and e["arm"]==a2])
+        if n1 and n2: stM.append((k1,n1,k2,n2))
+    k1,n1 = v([e for e in C if e["arm"]==a1]); k2,n2 = v([e for e in C if e["arm"]==a2])
+    if stM: mac(f"Four{tag}PreCMH", cmhtex(stM))
+    if n1 and n2:
+        mac(f"Four{tag}PreDiff", f"{100*(k1/n1 - k2/n2):.0f}")
+        mac(f"Four{tag}PreA", f"{k1}/{n1}"); mac(f"Four{tag}PreB", f"{k2}/{n2}")
+    # post-hoc stratum: intent-misaligned only
     st=[]
     for m in MODELS:
         k1,n1 = v(mis(a1,m)); k2,n2 = v(mis(a2,m))
