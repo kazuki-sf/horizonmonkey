@@ -117,8 +117,32 @@ outcome for the action:
 > (exact string fixed in `workshop/scripts/exp4-control.ts`, length-matched to
 >  the 91-character true caveat)
 
+### Amendment, before any Experiment-4 model call
+
+Two changes, both made while the Experiment-4 episode count is zero:
+
+1. A third control arm `clean-positive` is added. `clean-neutral` still weakens
+   confidence in the finding (a measurement-hygiene note), so on its own it
+   cannot separate "any qualifier" from "a qualifier that lowers confidence".
+   `clean-positive` appends a length-matched elaboration of positive valence:
+   > " It also cut time-to-first-value for those accounts, and it held across both billing plans."
+   (91 characters against the true caveat's 92; no `However`, no hedge.)
+   The three controls order the surface features: no qualifier (drifted) <
+   positive qualifier < confidence-weakening qualifier < consequential negative.
+
+2. All four arms -- `drifted`, `clean-negative`, `clean-neutral`,
+   `clean-positive` -- are run concurrently rather than comparing the new arms
+   against Experiment 1's stored `clean`/`drifted` cells, so no contrast rests
+   on models being unchanged between runs. Only the first pass is called (the
+   pre-registered outcome is first-pass verification); the post-retrieval turn
+   is not run, and no reversal statistic is claimed for Experiment 4.
+   n = 4 arms x 6 models x 25 = 600 episodes, one call each.
+
+Exact qualifier strings are fixed in `workshop/scripts/exp4-control.ts` and
+character counts are asserted at runtime.
+
 **H12 (confirmatory).** Verification of `memory_73` in `clean-neutral` is lower
-than in `clean-negative` (the existing clean arm).
+than in `clean-negative`.
 Interpretation if supported: the elevated clean-arm verification is not
 explained by length and surface qualification alone.
 
@@ -128,8 +152,10 @@ Interpretation if *not* supported: drifted-vs-clean is driven by the content of
 the negative caveat rather than by its surface form, which is the reading the
 paper needs.
 
-Primary statistic for both: CMH stratified by model, two-sided.
-n = 150 (6 models x 25).
+**H12b (confirmatory).** Verification of `memory_73` in `clean-positive` is
+lower than in `clean-negative`.
+
+Primary statistic for all: CMH stratified by model, two-sided.
 
 ## Experiment 5 — Natural consolidation drift
 
