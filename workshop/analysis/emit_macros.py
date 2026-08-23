@@ -92,19 +92,26 @@ C = load("workshop/runs/exp4-v1/**/*.json")
 mac("FourN", len(C))
 v = lambda r: (sum(1 for e in r if e["scores"]["verified_73"]), len(r))
 TAG = {"drifted":"Drift","clean-positive":"Pos","clean-neutral":"Neut","clean-negative":"Neg"}
+# marginal (confounded by intent) and intent-misaligned (the contrast that isolates
+# the qualifier) are both emitted; the paper reports the second and says why.
+mis = lambda a, m=None: [e for e in C if e["arm"]==a and not e["scores"]["intent_is_pricing"] and (m is None or e["model"]==m)]
 for arm,tag in TAG.items():
     k,n = v([e for e in C if e["arm"]==arm])
+    mac(f"Four{tag}AllK",k); mac(f"Four{tag}AllN",n); mac(f"Four{tag}AllPct", f"{100*k/n:.0f}" if n else "0")
+    mac(f"Four{tag}Intent", str(sum(1 for e in C if e["arm"]==arm and e["scores"]["intent_is_pricing"])))
+    k,n = v(mis(arm))
     mac(f"Four{tag}K",k); mac(f"Four{tag}N",n); mac(f"Four{tag}Pct", f"{100*k/n:.0f}" if n else "0")
 def c4(a1,a2,tag):
     st=[]
     for m in MODELS:
-        k1,n1 = v([e for e in C if e["model"]==m and e["arm"]==a1]); k2,n2 = v([e for e in C if e["model"]==m and e["arm"]==a2])
+        k1,n1 = v(mis(a1,m)); k2,n2 = v(mis(a2,m))
         if n1 and n2: st.append((k1,n1,k2,n2))
+    k1,n1 = v(mis(a1)); k2,n2 = v(mis(a2))
     if st: mac(f"Four{tag}CMH", cmhtex(st))
+    if n1 and n2: mac(f"Four{tag}Diff", f"{100*(k1/n1 - k2/n2):.0f}")
 c4("clean-neutral","clean-negative","NeutNeg"); c4("clean-positive","clean-negative","PosNeg")
 c4("clean-neutral","drifted","NeutDrift"); c4("clean-positive","drifted","PosDrift")
-pr = lambda arm: sum(1 for e in C if e["arm"]==arm and e["scores"]["intent_is_pricing"])
-mac("FourPricingIntentTotal", str(sum(pr(a) for a in TAG)))
+c4("drifted","clean-negative","DriftNeg")
 
 # ---- Experiment 5 ---------------------------------------------------------
 S = load("workshop/runs/exp5-scores/**/*.json")
