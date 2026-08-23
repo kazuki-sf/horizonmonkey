@@ -41,6 +41,13 @@ def wilson(k, n, z=1.96):
     h = z * math.sqrt(p*(1-p)/n + z*z/(4*n*n)) / d
     return (p, max(0, c-h), min(1, c+h))
 
+def ptex(p):
+    """LaTeX-format a p-value for use inside math mode."""
+    if p >= 0.001: return f"{p:.3f}".rstrip("0").rstrip(".")
+    from math import floor, log10
+    e = floor(log10(p)); m = p / 10**e
+    return f"{m:.1f}\\times 10^{{{e}}}"
+
 def fisher(a, b, c, d):
     """two-sided Fisher exact for [[a,b],[c,d]]"""
     from math import comb
@@ -91,9 +98,11 @@ for m in MODELS:
         k = sum(e["vt"] for e in g)
         p, lo, hi = wilson(k, len(g))
         row.append(f"{k}/{len(g)} ({p:.2f})")
-        key = m.replace("claude-","").replace("gpt-5.6-","").replace("-","").replace(".","")
-        mac(f"V{key}{c.replace('drifted-','').replace('drifted','drift').capitalize()}K", k)
-        mac(f"V{key}{c.replace('drifted-','').replace('drifted','drift').capitalize()}N", len(g))
+        key = "".join(ch for ch in m.replace("claude-","").replace("gpt-5.6-","") if ch.isalpha())
+        cname = {"clean":"Clean","drifted":"Drift","drifted-triage":"Triage"}[c]
+        mac(f"V{key}{cname}K", k)
+        mac(f"V{key}{cname}N", len(g))
+        mac(f"V{key}{cname}Frac", f"{k}/{len(g)} ({100*p:.0f}\\%)")
     g = sel(model=m, cond="drifted", target="memory_73", budget=2)
     h = sum(e["harmful"] for e in g)
     print(f"{m:<18} {row[0]:>14} {row[1]:>14} {row[2]:>14}  {h}/{len(g):>7}")
@@ -105,7 +114,14 @@ tot = sum(e["used"] for e in g)
 to_intent = sum((e["intent_share"] or 0)*e["used"] for e in g)
 to_target = sum(sum(1 for k in e["spent"] if k=="memory_73") for e in g)
 print(f"  credits spent: {tot} · to intent-backing memories: {to_intent:.0f} ({to_intent/tot:.2f}) · to corrupted target: {to_target} ({to_target/tot:.2f})")
+# Null baseline a hostile reviewer will demand: if credits were spread uniformly
+# over the six memories, the expected intent share depends on how many memories
+# back each episode's intent (onboarding has 2 backers, others 1). Compute the
+# episode-weighted uniform expectation and report observed vs expected.
+exp_uniform = sum(len(BACKING.get(e["intent"], set()))/6 * e["used"] for e in g) / tot if tot else 0
+print(f"  uniform-allocation expectation for intent share: {exp_uniform:.2f}  (observed {to_intent/tot:.2f})")
 mac("HOneCredits", tot); mac("HOneIntentShare", round(to_intent/tot,3)); mac("HOneTargetShare", round(to_target/tot,3))
+mac("HOneUniformExp", round(exp_uniform,3))
 # conditional: P(verify 73 | intent uses 73) vs P(verify 73 | intent doesn't)
 a = [e for e in g if e["target_backs_intent"]]; b = [e for e in g if not e["target_backs_intent"]]
 ka, kb = sum(e["vt"] for e in a), sum(e["vt"] for e in b)
@@ -114,7 +130,7 @@ print(f"  P(verify73 | intent!=pricing) = {kb}/{len(b)}")
 if a and b:
     p = fisher(ka, len(a)-ka, kb, len(b)-kb)
     print(f"  Fisher two-sided p = {p:.4g}")
-    mac("HOneCondA", f"{ka}/{len(a)}"); mac("HOneCondB", f"{kb}/{len(b)}"); mac("HOneFisherP", f"{p:.3g}")
+    mac("HOneCondA", f"{ka}/{len(a)}"); mac("HOneCondB", f"{kb}/{len(b)}"); mac("HOneFisherP", ptex(p))
 
 # ---- H2: drift detectability ------------------------------------------------
 print("\n== H2: clean vs drifted (target 73, b2, pooled) ==")
@@ -122,7 +138,16 @@ gc = sel(cond="clean", target="memory_73", budget=2); gd = sel(cond="drifted", t
 kc, kd = sum(e["vt"] for e in gc), sum(e["vt"] for e in gd)
 p = fisher(kd, len(gd)-kd, kc, len(gc)-kc)
 print(f"  clean {kc}/{len(gc)} vs drifted {kd}/{len(gd)} · Fisher p={p:.3g}")
-mac("HTwoCleanK", kc); mac("HTwoCleanN", len(gc)); mac("HTwoDriftK", kd); mac("HTwoDriftN", len(gd)); mac("HTwoFisherP", f"{p:.3g}")
+mac("HTwoCleanK", kc); mac("HTwoCleanN", len(gc)); mac("HTwoDriftK", kd); mac("HTwoDriftN", len(gd)); mac("HTwoFisherP", ptex(p))
+
+# ---- per-model H2 (one model inverts; report honestly) ----
+print("\n== H2 per model (clean vs drifted, 73, b2) ==")
+for m in MODELS:
+    gc2 = sel(model=m, cond="clean", target="memory_73", budget=2)
+    gd2 = sel(model=m, cond="drifted", target="memory_73", budget=2)
+    kc2, kd2 = sum(e["vt"] for e in gc2), sum(e["vt"] for e in gd2)
+    pm = fisher(kd2, len(gd2)-kd2, kc2, len(gc2)-kc2) if gc2 and gd2 else 1.0
+    print(f"  {m:<18} clean {kc2}/{len(gc2)} -> drifted {kd2}/{len(gd2)}  p={pm:.3g}")
 
 # ---- H3: target swap ----------------------------------------------------------
 print("\n== H3: corrupted target intent-aligned (86) vs misaligned (73), drifted b2, ablation models ==")
@@ -134,9 +159,12 @@ print(f"  verify corrupted: 73-world {k73}/{len(g73)} · 86-world {k86}/{len(g86
 if g73 and g86:
     p = fisher(k86, len(g86)-k86, k73, len(g73)-k73)
     print(f"  Fisher p = {p:.3g}")
-    mac("HThreeMisK", k73); mac("HThreeMisN", len(g73)); mac("HThreeAliK", k86); mac("HThreeAliN", len(g86)); mac("HThreeFisherP", f"{p:.3g}")
+    mac("HThreeMisK", k73); mac("HThreeMisN", len(g73)); mac("HThreeAliK", k86); mac("HThreeAliN", len(g86)); mac("HThreeFisherP", ptex(p))
 for m in ABL:
     a=[e for e in g73 if e["model"]==m]; b=[e for e in g86 if e["model"]==m]
+    key = "".join(ch for ch in m.replace("claude-","").replace("gpt-5.6-","") if ch.isalpha())
+    mac(f"SWAP{key}MisK", sum(e['vt'] for e in a)); mac(f"SWAP{key}MisN", len(a))
+    mac(f"SWAP{key}AliK", sum(e['vt'] for e in b)); mac(f"SWAP{key}AliN", len(b))
     print(f"    {m:<16} 73: {sum(e['vt'] for e in a)}/{len(a)} · 86: {sum(e['vt'] for e in b)}/{len(b)}")
 
 # ---- H4: invariant effect -----------------------------------------------------
@@ -153,8 +181,9 @@ for m in ABL:
     for b in [1,2,3]:
         g = sel(model=m, cond="drifted", target="memory_73", budget=b)
         r.append(f"b{b}: {sum(e['vt'] for e in g)}/{len(g)}")
-        key = m.replace("claude-","").replace("gpt-5.6-","").replace("-","").replace(".","")
-        mac(f"BUD{key}B{b}K", sum(e['vt'] for e in g)); mac(f"BUD{key}B{b}N", len(g))
+        key = "".join(ch for ch in m.replace("claude-","").replace("gpt-5.6-","") if ch.isalpha())
+        bn = {1:"One",2:"Two",3:"Three"}[b]
+        mac(f"BUD{key}{bn}K", sum(e['vt'] for e in g)); mac(f"BUD{key}{bn}N", len(g))
     print(f"  {m:<16} {' · '.join(r)}")
 
 # ---- position check -----------------------------------------------------------
@@ -169,8 +198,38 @@ print("\n== safety summary ==")
 for c in ["clean","drifted","drifted-triage"]:
     g=[e for e in eps if e["cond"]==c]
     print(f"  {c:<16} harmful {sum(e['harmful'] for e in g)}/{len(g)} · reversal-after-verify {sum(e['reversal'] and e['used']>0 for e in g)}/{sum(e['used']>0 for e in g)}")
+# conditional reversal: among drifted b2 73-world episodes that verified 73
+gg = sel(cond="drifted", target="memory_73", budget=2)
+vv = [e for e in gg if e["vt"]]
+rr = sum(e["reversal"] for e in vv)
+print(f"  reversal after verifying the corrupted memory (drifted 73 b2): {rr}/{len(vv)}")
+mac("CondReversalK", rr); mac("CondReversalN", len(vv))
+mac("CondReversalPct", f"{100*rr/len(vv):.0f}\\%" if vv else "--")
+mac("HOneIntentSharePct", f"{100*(to_intent/tot):.0f}\\%")
+mac("HOneUniformExpPct", f"{100*exp_uniform:.0f}\\%")
 mac("TotalEpisodes", len(eps))
 mac("TotalHarmful", sum(e["harmful"] for e in eps))
+
+# ---- generated pgfplots figure: budget vs verification (H5) -----------------
+ABL3 = ["claude-opus-5","gpt-5.6-sol","gpt-5.6-luna"]
+lines = []
+for m in ABL3:
+    pts = []
+    for b in [1,2,3]:
+        g2 = sel(model=m, cond="drifted", target="memory_73", budget=b)
+        if g2: pts.append((b, 100*sum(e["vt"] for e in g2)/len(g2)))
+    lines.append((m, pts))
+fig = ["\\begin{tikzpicture}",
+ "\\begin{axis}[width=9cm,height=6cm,xlabel={verification budget $k$},ylabel={corrupted memory verified (\\%)},xtick={1,2,3},ymin=0,ymax=100,legend pos=south east,legend style={font=\\small},grid=major]"]
+for name, pts in lines:
+    coords = " ".join(f"({b},{p:.1f})" for b, p in pts)
+    fig.append(f"\\addplot+[thick,mark=*] coordinates {{{coords}}};")
+    label = {"claude-opus-5":"Claude Opus 5","gpt-5.6-sol":"GPT-5.6 Sol","gpt-5.6-luna":"GPT-5.6 Luna"}[name]
+    fig.append(f"\\addlegendentry{{{label}}}")
+fig += ["\\end{axis}", "\\end{tikzpicture}"]
+with open(os.path.join(os.path.dirname(__file__), "figures", "budget_fig.tex"), "w") as f:
+    f.write("\n".join(fig) + "\n")
+print("wrote figures/budget_fig.tex")
 
 os.makedirs(os.path.join(os.path.dirname(__file__), "figures"), exist_ok=True)
 with open(os.path.join(os.path.dirname(__file__), "figures", "macros.tex"), "w") as f:
