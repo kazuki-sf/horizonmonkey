@@ -120,6 +120,7 @@ D = load("workshop/runs/exp5-v2/**/*.json")
 mac("FiveChains", len(D))
 if S:
     LAB = ["session_note","consolidated","resum_130","resum_110","resum_90","resum_70"]
+    D = load("workshop/runs/exp5-v2/**/*.json")
     NEG = {"memory_73"}; SCOPE = {"memory_31","memory_44","memory_57"}; NONE = {"memory_86","memory_91"}
     def surv(keys, lab):
         rows=[s for s in S if s["memory"] in keys]
@@ -135,6 +136,20 @@ if S:
             key = f"Five{tag}{GENNAME[lab]}"
             mac(key+"K",k); mac(key+"N",n); mac(key+"Pct", f"{100*k/n:.0f}" if n else "0")
     k,n = surv(NONE,"resum_70"); mac("FiveFalsePos", f"{k}/{n}")
+    fp = sum(1 for s_ in S if s_["memory"] in NONE for j in s_["judgments"] if j["states_qualifier"])
+    fpn = sum(1 for s_ in S if s_["memory"] in NONE for j in s_["judgments"])
+    mac("FiveFalsePosAll", f"{fp}/{fpn}")
+    # what erodes inside the corrupted memory: the number, or the instruction?
+    PROH = ["do not","don't","never","avoid","not a growth","not sustainable","unsustainable","not a lever","only for","one-off"]
+    NUM  = ["retention","churn","renewal","-12","12%","12pp"]
+    D2 = {(d["model"], d["rep"]): d for d in D}
+    for lab,tag in (("consolidated","Cons"),("resum_70","ResD")):
+        gi = LAB.index(lab); kp = kn = t = 0
+        for ch in D2.values():
+            body = ch["generations"][gi].get("memory_73","").lower()
+            t += 1; kp += any(w in body for w in PROH); kn += any(w in body for w in NUM)
+        mac(f"FiveNum{tag}", f"{kn}/{t}"); mac(f"FiveProh{tag}", f"{kp}/{t}")
+    mac("FiveGenerations", "6")
 
 os.makedirs("workshop/paper", exist_ok=True)
 bad = [k for k in M if not k.isalpha()]
