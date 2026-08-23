@@ -3,6 +3,10 @@
 **Semantic chaos engineering for long-horizon agents.**
 *Break the agent's beliefs before reality does.*
 
+**▶ Live demo — https://horizonmonkey.vercel.app**
+Pick a fault, press run, and watch the recorded trace replay step by step. The
+deployed demo is pure deterministic simulation: no API keys, no model calls.
+
 Long-horizon agents do not only fail when APIs crash. They can fail while every call
 succeeds: one stale observation, one dropped caveat, or one subtly mutated objective
 becomes a belief, enters memory, and compounds through hundreds of later decisions.
