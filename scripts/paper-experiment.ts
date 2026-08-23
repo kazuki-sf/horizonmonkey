@@ -368,6 +368,25 @@ async function main() {
       });
     }
   }
+  // Interleave across cells so the pool always has every provider in flight —
+  // grid order would serialize one slow model at a time.
+  const byCell = new Map<string, (() => Promise<void>)[]>();
+  let ti = 0;
+  for (const cell of grid) {
+    const n = cell.n;
+    const key = `${cell.model}|${cell.cond}|${cell.target}|${cell.budget}`;
+    byCell.set(key, tasks.slice(ti, ti + 0)); // placeholder, rebuilt below
+    ti += n;
+  }
+  // simpler: round-robin shuffle of the flat list with a fixed stride
+  const interleaved: (() => Promise<void>)[] = [];
+  const stride = 37; // co-prime with typical cell sizes
+  const taken = new Set<number>();
+  for (let k = 0, idx = 0; k < tasks.length; k++, idx = (idx + stride) % tasks.length) {
+    while (taken.has(idx)) idx = (idx + 1) % tasks.length;
+    taken.add(idx); interleaved.push(tasks[idx]);
+  }
+  tasks.length = 0; tasks.push(...interleaved);
   console.log(`${tasks.length} episodes to run (existing files skipped)`);
   const t0 = Date.now();
   await pool(tasks, width);

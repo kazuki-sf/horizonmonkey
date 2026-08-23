@@ -1,0 +1,225 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,graphicx,microtype,url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{natbib}
+\bibliographystyle{plainnat}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+\input{figures/macros}
+
+\title{Verification Goes Where the Agent Is Already Looking:\\
+Intent-Aligned Triage of Inherited Memory Under Budget}
+\author{Kazuki Nakayashiki\\ \small Glasp}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A long-horizon agent inherits organizational memory it did not write: lessons
+consolidated, compressed, and re-summarized by earlier sessions of itself. It
+cannot verify all of them against their sources, so its reliability depends on
+an allocation decision that current evaluations do not measure: \emph{which}
+inherited beliefs get checked when checking is scarce. We construct a
+controlled decision scenario in which one of six inherited memories has lost a
+true, materially negative caveat during consolidation, give the agent a budget
+of source-record lookups, and measure where the budget goes. Across
+\TotalEpisodes{} pre-registered episodes spanning six frontier models from two
+providers, with memory order randomized and memory length balanced, three
+regularities emerge. First, verification is intent-aligned: models
+overwhelmingly spend scarce lookups on the memories backing the action they
+already intend to take (\HOneIntentShare{} of all credits), and the corrupted
+high-consequence belief is checked far more often when it happens to back that
+intention than when it does not. Second, the corruption itself is detectable
+and reallocates attention --- the same memory attracts more verification when
+its caveat is missing than when it is present --- but the strength of this
+reallocation varies sharply across models at the same task, from near-always to
+near-never. Third, an explicit triage instruction (``prioritize consequential,
+insufficiently supported beliefs'') raises verification of the corrupted belief
+without closing the gap between models. No episode ends in a harmful final
+decision under our pre-registered rule (\TotalHarmful{}/\TotalEpisodes{}); the
+failure mode these measurements expose is epistemic, not behavioral. All
+scenarios, scoring rules, and hypotheses were committed before any model call;
+every number reproduces from released episode files with no API access.
+\end{abstract}
+
+\section{Introduction}
+
+An agent that runs for weeks does not act from raw evidence. It acts from
+memory: lessons written by earlier sessions, compressed by summarization
+passes, and inherited as durable organizational knowledge. Each generation of
+compression is lossy, and what is lost is not random --- qualifiers, scope
+restrictions, and negative results are precisely the clauses that summaries
+drop, because the sentence remains true and useful without them.
+``Discounting lifted signups 31\% and revenue 18\% \emph{but destroyed
+retention}'' compresses naturally to ``discounting lifted signups 31\% and
+revenue 18\%.'' Nothing false has been written. A constraint has silently
+stopped being carried forward.
+
+A capable agent can defend itself against this by consulting provenance: the
+source record behind an inherited summary still holds the caveat. Prior work
+has shown that models will follow provenance chains when a belief looks
+suspicious, and a growing literature studies how to spend a limited
+verification budget on candidate \emph{outputs}. But a long-horizon agent
+faces a different budget problem, one level up: it may inherit hundreds of
+beliefs, any of which could have drifted, and it can afford to check only a
+few. The reliability question is not whether the agent \emph{can} verify ---
+it is \emph{what it chooses to verify}.
+
+This paper measures that choice directly. We place an agent in a business
+situation with three concurrent symptoms, hand it six inherited memories of
+balanced length and format in randomized order, corrupt exactly one of them by
+deleting a true negative caveat, and allow the agent to retrieve the source
+records of at most $k$ memories before it must commit to an action. Because we
+constructed the corruption, we know exactly which lookup would recover the
+lost constraint, and every allocation is scored against that ground truth.
+
+The design has a property we consider essential: the corrupted belief is
+\emph{not} the one the situation makes salient. The symptoms point mostly
+toward onboarding and activation work; the corrupted memory recommends
+promotional pricing --- the direction that is most consequential and least
+reversible if its hidden caveat is real, but not the direction the agent is
+likely to pick. A verification policy that follows risk should check it. A
+verification policy that follows intent will check something else.
+
+Our findings, pre-registered as five hypotheses before any model call:
+
+\begin{itemize}
+\item \textbf{Allocation follows intent.} Across all drifted episodes at
+budget two, \HOneIntentShare{} of verification credits go to memories backing
+the model's own first-pass intended action. The corrupted belief is verified
+in \HOneCondA{} of episodes where the model already intends pricing, against
+\HOneCondB{} where it does not (Fisher $p=\HOneFisherP$).
+\item \textbf{The drift is detectable, unevenly.} The same memory attracts
+verification \HTwoDriftK{}/\HTwoDriftN{} of the time when its caveat is
+missing versus \HTwoCleanK{}/\HTwoCleanN{} when present
+($p=\HTwoFisherP$) --- but per-model rates at the same task range from
+near-always to near-never.
+\item \textbf{Symmetry confirms the mechanism.} When we instead corrupt the
+intent-aligned memory (onboarding), it is verified \HThreeAliK{}/\HThreeAliN{}
+of the time, against \HThreeMisK{}/\HThreeMisN{} for the intent-misaligned
+target in the matched arm ($p=\HThreeFisherP$). The same corruption is caught
+or missed depending on whether it lies in the agent's path.
+\item \textbf{Instructions help but do not equalize.} A triage invariant
+raises verification of the corrupted belief in every model that was not
+already at ceiling, and the between-model gap survives it.
+\item \textbf{No behavioral failures.} Under the pre-registered harmful-decision
+rule, \TotalHarmful{} of \TotalEpisodes{} episodes end badly. The exposure is
+epistemic: unexamined corrupted beliefs surviving into an agent's working state.
+\end{itemize}
+
+\section{Related Work}
+
+\paragraph{Budgeted verification of model outputs.}
+A recent line of work allocates limited verification compute across candidate
+outputs or reasoning steps: anytime verification cascades under token and tool
+budgets \citep{ava2026}, belief-guided escalation of high-risk outputs
+\citep{yuan2026belief}, budget control for search agents
+\citep{fang2026budget}, and analyses of when allocation policies break down
+under heterogeneous signal quality \citep{yang2026hetero}. Benchmarks probe
+whether agents manage tool budgets at all \citep{wang2026allocbench,
+lin2026bagen}. This literature allocates verification over \emph{candidate
+answers or actions}; we allocate over \emph{inherited beliefs}, and measure
+the direction of the allocation rather than its total.
+
+\paragraph{Memory integrity and poisoning.}
+Memory poisoning studies adversarial insertion of content into agent memory
+\citep{dash2026untrusted, xie2026memevobench}, and defenses increasingly use
+provenance --- trusting sources rather than content \citep{singh2026belief}.
+Our corruption is not adversarial: nothing false is inserted, and the drifted
+summary is exactly what a benign compression pass produces. The threat model
+is operational, not attacker-driven, extending the fault-injection tradition
+\citep{tan2026agentchaos} from infrastructure and transport faults to the
+semantic layer.
+
+\paragraph{Provenance and self-auditing.}
+Execution-provenance surveys catalogue how evidence, memory, and actions
+connect in agent traces \citep{wang2026traces}; self-auditing repairs
+unsupported intermediate beliefs before they commit \citep{yuan2026verify};
+and provenance-sensitivity audits ask whether action selection responds to
+source information at all \citep{liao2026auditing}. These works assume the
+audit target is given or audit everything. We study the upstream selection
+problem: with hundreds of potential targets and a budget of two, the choice of
+\emph{what} to audit is itself the reliability variable.
+
+\section{Experimental Design}
+
+\subsection{Scenario}
+The agent is a growth agent for a synthetic B2B SaaS business. It inherits six
+durable memories (Table~\ref{tab:memories}), each a one-to-two sentence lesson
+with a consolidation date and an archived source. Bodies are length-balanced
+(123--132 characters) and identically formatted; presentation order is
+shuffled per episode with a seeded PRNG, making position a measured covariate
+rather than a confound. The situation presents three concurrent symptoms ---
+competitor price pressure, declining activation, declining onboarding
+completion --- so that four of the six memories bear on some symptom and no
+single action trivially dominates. The agent must select one experiment, and
+may first retrieve the source records of at most $k \in \{1,2,3\}$ memories by
+id. Retrieval is answered with the true experiment record.
+
+\subsection{Corruption}
+In the \emph{clean} arm, the target memory carries its true caveat (for the
+pricing memory: ``it materially reduced 30-day retention; do not generalize'').
+In the \emph{drifted} arm the caveat is absent; nothing marks the omission,
+and the remaining sentence is true. The \emph{drifted-triage} arm adds one
+system-prompt invariant: \emph{``When verification capacity is limited,
+prioritize inherited beliefs that are both highly consequential to the current
+decision and insufficiently supported for the objective being optimized.''}
+It names no memory, no metric, and no direction. The corrupted-target ablation
+applies the same construction to the intent-aligned onboarding memory instead,
+with a correspondingly caveated source record.
+
+\subsection{Models, scale, pre-registration}
+Six models from two providers: Claude Opus 5, Sonnet 5, Haiku 4.5; GPT-5.6
+Sol, Terra, Luna --- all at their default or medium reasoning setting, byte-identical
+prompts. The core grid is $6\ \text{models} \times \{$clean $n{=}25$, drifted
+$n{=}50$, triage $n{=}50\}$ at budget 2; ablations cover budgets 1 and 3 and
+the swapped target on three models. Hypotheses, scoring rules, and the full
+scenario text were committed to a public repository before the first model
+call of this experiment; episode files are reproducible from their seeds and
+released in full.
+
+\subsection{Metrics}
+For each episode we record the first-pass intended action, the set of memories
+whose sources were requested (resolved by id), and the final decision after
+any retrieved records are returned. Primary outcome: whether the corrupted
+memory's source was requested. Secondary: the share of credits spent on
+memories backing the first-pass intent (the \emph{intent share}); reversal of
+action or scale after retrieval; and a strict, pre-registered
+harmful-decision rule requiring all of: final action backed by the corrupted
+memory, more than a small guarded test, the corrupted memory cited as
+evidence, never verified, and no uncertainty preserved. Proportions carry
+Wilson 95\% intervals; pairwise contrasts use two-sided Fisher exact tests.
+
+\section{Results}
+% ---- filled from figures/macros.tex after the run completes ----
+\input{results_body}
+
+\section{Limitations}
+\input{limitations_body}
+
+\section{Conclusion}
+Long-horizon reliability work has concentrated on whether agents can detect
+corrupted state, and on how to spend verification compute across candidate
+outputs. Between the two sits a quieter decision that our measurements suggest
+does much of the work: with limited capacity, an agent verifies where it
+already intends to act. On a task where every model spent its full budget
+every time, reliability differences came almost entirely from \emph{direction}
+--- whether scarce attention reached the belief that was silently wrong, or
+only the beliefs behind the plan the agent had already formed. Making that
+allocation visible, steerable, and eventually optimal is a concrete, testable
+target for agent-memory systems.
+
+\bibliography{refs}
+
+\appendix
+\section{Scenario text}
+The complete system prompt, memory lineages for both corruption targets, the
+hidden source records, and the pre-registered scoring rules are released
+verbatim in the repository (\texttt{runs/paper/preregistration.md}) and are
+byte-identical to what every model received.
+
+\end{document}
