@@ -3,9 +3,10 @@
 **Semantic chaos engineering for long-horizon agents.**
 *Break the agent's beliefs before reality does.*
 
-**▶ Live demo — https://horizonmonkey.vercel.app**
-Pick a fault, press run, and watch the recorded trace replay step by step. The
-deployed demo is pure deterministic simulation: no API keys, no model calls.
+**▶ Demo — `npm install && npm run dev`, then http://localhost:3579**
+Pick a fault, press run, and watch the recorded trace replay step by step. Pure
+deterministic simulation: no API keys, no model calls, nothing to configure.
+(The hackathon deployment at `horizonmonkey.vercel.app` has been taken down.)
 
 Long-horizon agents do not only fail when APIs crash. They can fail while every call
 succeeds: one stale observation, one dropped caveat, or one subtly mutated objective
@@ -28,6 +29,32 @@ Your agent / agent policy
 
 Built at the Long Horizon Agents Hackathon (Coframe / AGI House). The reference scenario
 is a Coframe-style growth agent; that is the **example**, not the product.
+
+---
+
+## Paper
+
+**Verification Goes Where the Agent Is Already Looking: Intent-Aligned Triage of
+Inherited Memory Under Budget** — submitted to arXiv (cs.IR); link added on
+announcement.
+
+A long-horizon agent inherits memory it did not write and cannot check all of it.
+The paper gives six production models a budget of provenance lookups, silently
+deletes one true negative caveat from one inherited lesson, and measures *which*
+beliefs get checked. Across 1,020 pre-registered episodes, verification is
+intent-aligned: it goes to the memories backing the action the model already
+intends, not to the belief that is most costly if wrong. A second experiment
+(450 more episodes) then makes that unchecked belief load-bearing.
+
+| | |
+|---|---|
+| Source and build | [`paper/`](paper/) — `sh paper/make-arxiv.sh` |
+| Pre-registrations | [`runs/paper/preregistration.md`](runs/paper/preregistration.md), [`runs/paper-phase2/preregistration.md`](runs/paper-phase2/preregistration.md) — committed before the first model call |
+| Episode records | `runs/paper/`, `runs/paper-phase2/` — every episode, released in full |
+| Reanalysis | `python3 paper/analyze.py` and `paper/analyze_phase2.py` regenerate every number, table, and figure from the episode files. No API key needed. |
+
+The paper is a separate study *built on* this harness: it uses the caveat-omission
+fault against real models, where the demo below uses the deterministic simulation.
 
 ---
 
@@ -377,7 +404,10 @@ examples/growth-agent/   the reference scenario
   compare.ts             control / chaos / defended, in one call
 
 app/                     Next.js UI
-runs/                    frozen traces
+runs/                    frozen traces from the deterministic runs
+runs/paper/              Experiment 1: pre-registration + 1020 episode records
+runs/paper-phase2/       Experiment 2: pre-registration + 450 episodes, 150 probes
+paper/                   the arXiv paper: LaTeX source, analysis scripts, figures
 scripts/snapshot.ts      refactor safety net: key-sorted dump of all 20 runs
 ```
 

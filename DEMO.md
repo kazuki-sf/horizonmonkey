@@ -7,8 +7,8 @@ everything in *italics* is what to do with your hands.
 runs nothing by itself — that is deliberate, so don't worry that it looks idle.
 Speed on `1×`.
 
-- Live: **https://horizonmonkey.vercel.app**
-- Fallback if the network dies: `npm run dev` → **http://localhost:3579/**
+- `npm run dev` → **http://localhost:3579/**
+- (The hackathon deployment at `horizonmonkey.vercel.app` is no longer up.)
 
 Measured playback, so you can trust the clock:
 
