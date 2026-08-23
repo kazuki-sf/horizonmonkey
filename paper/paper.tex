@@ -21,60 +21,44 @@ Intent-Aligned Triage of Inherited Memory Under Budget}
 \maketitle
 
 \begin{abstract}
-A long-horizon agent inherits organizational memory it did not write: lessons
-consolidated, compressed, and re-summarized by earlier sessions of itself. It
-cannot verify all of them against their sources, so its reliability depends on
-an allocation decision that current evaluations do not measure: \emph{which}
-inherited beliefs get checked when checking is scarce. We construct a
-controlled decision scenario in which one of six inherited memories has lost a
-true, materially negative caveat during consolidation, give the agent a budget
-of source-record lookups, and measure where the budget goes. Across
-\TotalEpisodes{} pre-registered episodes spanning six production models from two
-providers, with memory order randomized and memory length balanced, three
-regularities emerge. First, verification is intent-aligned: models
-overwhelmingly spend scarce lookups on the memories backing the action they
-already intend to take (\HOneIntentSharePct{} of all credits, against a uniform-allocation expectation of \HOneUniformExpPct), and the corrupted
-high-consequence belief is checked far more often when it happens to back that
-intention than when it does not. Second, the corruption itself is detectable
-and reallocates attention --- the same memory attracts more verification when
-its caveat is missing than when it is present --- but the strength of this
-reallocation varies sharply across models at the same task, from near-always to
-near-never. Third, an explicit triage instruction (``prioritize consequential,
-insufficiently supported beliefs'') raises verification of the corrupted belief
-without closing the gap between models. A second pre-registered experiment
-makes the unexamined belief load-bearing: the situation shifts mid-session,
-after the budget is spent. Its strict failure metrics returned zero --- every
-model that walked into the corrupted direction also self-reported hedges, and
-such flags saturate --- and its behavioral contrast is observational. Three
-further pre-registered experiments then close the gaps we found by auditing
-that design. Replaying the later decision with the steering instruction and the
-conversation history removed, and randomizing which source records are carried
-into it, both put the effect of holding the recovered caveat near
-$-\ThreeBDiff$ percentage points: \ThreeBOthK/\ThreeBOthN{} of episodes chose
-the corrupted direction without that provenance in context against
-\ThreeBTgtK/\ThreeBTgtN{} with it. Matched-qualifier controls then show the
-mechanism is not omission-detection: with body length and surface hedging
-controlled, the true caveat \emph{suppresses} verification, and a memory
-carrying an irrelevant hedge is checked more often than one whose material
-caveat was silently deleted --- silence is stealthier than qualification.
-Finally we test the premise this threat model rests on by running a real
-consolidation chain, and it does not hold: over \FiveGenerations{}
-generations quantified negative outcomes mostly survive (\FiveNegResDPct\% of
-chains) while scope restrictions (\FiveScopeResDPct\%) and prohibitions erode,
-and a body carrying no negative content --- the corruption our own experiments
-install by hand --- appears in \FivePurelyPositive{} chain-generations. Running
-the allocation protocol on the lessons consolidation actually produces,
-verification sits at \NatPct\%, beside the intact caveat's
-\FourNegAllPct\% rather than the hand-drifted \FourDriftAllPct\%: the
-surviving number keeps the agent off the action. The allocation failure is real
-and causally identified, and ordinary summarisation is not what produces the
-belief that triggers it. The randomization also reaches severity, not only
-direction: unguarded moves into the corrupted direction occur in
-\ThreeBNGOth{} episodes without the provenance and \ThreeBNGTgt{} with it
-($p = \ThreeBNGCMH$), while the five-clause strict harm rule still returns
-zero everywhere because self-reported hedging saturates. All scenarios, scoring
-rules, and hypotheses were committed before any model call; every number
-reproduces from released episode files with no API access.
+A long-horizon agent inherits organizational memory it did not write. Giving
+every record a provenance link does not make that memory safe: an agent holding
+hundreds of inherited beliefs can follow only a few links before it acts, so the
+reliability question is not whether provenance exists but which links get
+followed. We put six production models in a controlled scenario where one of six
+inherited memories has lost a true negative caveat and at most $k$ source records
+can be pulled before committing, and report five pre-registered experiments.
+
+\textbf{Where scarce verification goes.} Allocation tracks the agent's current
+plan. Across \ExpOneN{} episodes the corrupted memory is verified in
+\AlignedK/\AlignedN{} episodes whose first-pass intent it backs and
+\MisK/\MisN{} otherwise, with no counterexample; moving the same corruption
+onto the intended path makes it caught 75/75. We report this as an allocation
+\emph{signature} rather than a causal claim: intent and lookups are named in the
+same response.
+
+\textbf{Whether it matters later.} It does, causally. Randomizing which source
+records are carried into a later decision, after the budget is spent and the
+situation has shifted, moves the corrupted-direction rate from
+\ThreeBOthK/\ThreeBOthN{} to \ThreeBTgtK/\ThreeBTgtN{} and takes unguarded
+commitment from \ThreeBNGOth{} to \ThreeBNGTgt{}. A replay stripping the
+steering instruction and the conversation history agrees within a point.
+
+\textbf{What the threat model actually is.} Two boundary results narrow it.
+With body length and surface hedging matched, a stated caveat \emph{suppresses}
+verification and a memory hedging about something irrelevant is checked more
+often than one whose material caveat was silently deleted --- silence is
+stealthier than qualification, and our earlier reading of that contrast as
+omission detection was wrong. And the benign consolidation chain we tested does
+not produce the corruption our own experiments install: over
+\FiveGenerations{} generations quantified negatives mostly survive
+(\FiveNegResDPct\%) while scope (\FiveScopeResDPct\%) and prohibition erode,
+and a body with no negative content left appears in \FivePurelyPositive{}
+chain-generations. The realistic failure is a memory that stays factually
+accurate while losing the limits that made it safe to act on.
+
+All hypotheses and scoring rules were committed before the corresponding model
+calls; every number reproduces from released episode files with no API access.
 \end{abstract}
 
 \section{Introduction}
@@ -177,13 +161,15 @@ drift (\XUngDriftK{} vs.\ \XUngCleanK{} clean).
 shows the strongest verifiers do not rate the corrupted memory as weak, while
 the model that rates it weakest barely verifies it --- so neither
 introspective report nor allocation is a proxy for the other.
-\item \textbf{The allocation is causally load-bearing.} Randomizing which
-source records are carried into the later decision --- so nothing is
-self-selected --- moves the corrupted-direction rate from \ThreeBOthK/\ThreeBOthN{}
-to \ThreeBTgtK/\ThreeBTgtN{}, and removes unguarded commitment to it entirely
-(\ThreeBNGOth{} against \ThreeBNGTgt). Replaying the decision with the steering
-instruction and the conversation history stripped out gives the same estimate
-from an instrument (\S\ref{sec:causal}).
+\item \textbf{What the allocation recovers causally changes later behaviour.}
+Randomizing which source records are carried into the later decision --- so
+nothing is self-selected --- moves the corrupted-direction rate from
+\ThreeBOthK/\ThreeBOthN{} to \ThreeBTgtK/\ThreeBTgtN{}, and removes unguarded
+commitment to it entirely (\ThreeBNGOth{} against \ThreeBNGTgt). This
+identifies the downstream half of the chain; it does not identify the upstream
+half, since intent and lookups are named in the same response. We report an
+allocation \emph{signature}, not a demonstration that intent causes it
+(\S\ref{sec:causal}).
 
 \item \textbf{The mechanism is not omission detection.} With body length and
 surface hedging matched, the true caveat \emph{suppresses} verification
@@ -192,11 +178,13 @@ surface hedging matched, the true caveat \emph{suppresses} verification
 deleted (\FourDriftPct\%). Silence is stealthier than qualification
 (\S\ref{sec:qualifier}).
 
-\item \textbf{Benign compression does not produce this corruption.} Over
-\FiveGenerations{} generations of real consolidation, quantified negatives
-mostly survive (\FiveNegResDPct\%) while scope restrictions
-(\FiveScopeResDPct\%) and prohibitions erode. The realistic drift keeps the
-number and loses the limit (\S\ref{sec:drift}).
+\item \textbf{The consolidation chain we tested does not produce this
+corruption.} Over \FiveGenerations{} generations, quantified negatives mostly
+survive (\FiveNegResDPct\%) while scope restrictions (\FiveScopeResDPct\%) and
+prohibitions erode, and a body with no negative content left appears in
+\FivePurelyPositive. Within this setup the drift keeps the fact and loses the
+limit: a memory can stay accurate while becoming decision-dangerous
+(\S\ref{sec:drift}).
 
 \item \textbf{No strict behavioral failures.} Under the pre-registered
 harmful-decision rule, \TotalHarmful{} episodes of \TotalEpisodes{} in
@@ -222,9 +210,16 @@ the direction of the allocation rather than its total.
 Memory poisoning studies adversarial insertion of content into agent memory
 \citep{dash2026untrusted, xie2026memevobench}, and defenses increasingly use
 provenance --- trusting sources rather than content \citep{singh2026belief}.
-Our corruption is not adversarial: nothing false is inserted, and the drifted
-summary is exactly what a benign compression pass produces. The threat model
-is operational, not attacker-driven, extending the fault-injection tradition
+Our corruption is not adversarial: nothing false is inserted and the remaining
+sentence is true. It is not, however, what the benign consolidation chain we
+test in \S\ref{sec:drift} produces: that chain erodes scope and prohibition
+while keeping quantified negatives, and never strips a lesson of negative
+content entirely. Three sources are worth keeping apart --- the constraint loss
+benign consolidation does produce; stronger operational transformations we did
+not test, such as aggressive rewriting, lossy migration or schema conversion;
+and adversarial poisoning, a different threat model. Our operator isolates the
+allocation question cleanly and belongs to the second group, not the first. The
+threat model is operational, not attacker-driven, extending the fault-injection tradition
 \citep{tan2026agentchaos} from infrastructure and transport faults to the
 semantic layer.
 
@@ -312,7 +307,8 @@ call of this experiment; episode files are reproducible from their seeds and
 released in full.
 
 \paragraph{Data and code availability.}
-All scenario text, pre-registrations, per-episode records for both experiments,
+All scenario text, all three pre-registrations, per-episode records for every
+experiment,
 and the analysis scripts that regenerate every number, table, and figure in this
 paper are available at \url{https://github.com/kazuki-sf/horizonmonkey}. The
 analysis reads only the released episode files and requires no API access.

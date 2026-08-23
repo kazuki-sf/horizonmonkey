@@ -120,6 +120,7 @@ v = lambda r: (sum(1 for e in r if e["scores"]["verified_73"]), len(r))
 TAG = {"drifted":"Drift","clean-positive":"Pos","clean-neutral":"Neut","clean-negative":"Neg"}
 # marginal (confounded by intent) and intent-misaligned (the contrast that isolates
 # the qualifier) are both emitted; the paper reports the second and says why.
+mac("FourAllN", len(C))
 mis = lambda a, m=None: [e for e in C if e["arm"]==a and not e["scores"]["intent_is_pricing"] and (m is None or e["model"]==m)]
 for arm,tag in TAG.items():
     k,n = v([e for e in C if e["arm"]==arm])
