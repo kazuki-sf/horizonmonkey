@@ -225,9 +225,23 @@ answer obvious, so the failure metric could not fire. That diagnosis produced v2
 rather than a tuned v1; both are in [`runs/llm-hard-demo/`](runs/llm-hard-demo/)
 with every raw response.
 
+A third scenario, **v3, is exploratory and reported as such**: four generations of
+lineage, where the first artifact provenance returns is itself a compressed
+summary that already lost the caveat, so one lookup is no longer enough. Twelve
+episodes only. Opus 5 and Sol walked to the generation that still held the
+caveat every time; Luna varied — one episode retrieved the drifted weekly review,
+found it plausible, stopped there, and chose promotional pricing on the strength
+of the inherited claim. It hedged the action into a guarded test with retention
+stop-conditions, so the pre-registered rule correctly did not score it a harmful
+decision. That separation is the useful part: **the epistemic failure occurred —
+stopping at a compressed intermediate — while the behavioural failure did not.**
+Twelve episodes cannot establish a rate; it is a direction to test properly.
+
 ```bash
 npx tsx scripts/llm-hard-demo-v2.ts --print   # scenario + pre-registered scoring, no API call
 npx tsx scripts/llm-hard-demo-v2.ts --smoke   # 21 episodes, ~10 min
+npx tsx scripts/llm-hard-demo-v3.ts --print   # multi-hop lineage + scoring
+npx tsx scripts/llm-hard-audit.ts             # recompute every hard-probe number, no API calls
 ```
 
 ### What this does and does not license us to say
