@@ -436,6 +436,25 @@ export default function Page() {
               <div className="term-bar">
                 <span className={`dot${playing ? " live" : ""}`} />
                 live agent trace · {arm}
+                {(() => {
+                  // A sticky header stops holding once its group scrolls past, so
+                  // the injection point also gets a permanent marker here. Clicking
+                  // it jumps back to the step.
+                  const fg = groups.find((g) => g.status === "fault");
+                  return fg ? (
+                    <button
+                      className="fault-jump"
+                      onClick={() => {
+                        setManual((m) => ({ ...m, [fg.step]: true }));
+                        document
+                          .querySelector(`[data-step="${fg.step}"]`)
+                          ?.scrollIntoView({ block: "center", behavior: "smooth" });
+                      }}
+                    >
+                      ⚡ fault at step {String(fg.step).padStart(2, "0")}
+                    </button>
+                  ) : null;
+                })()}
                 <span className="right">
                   {groups.length} steps · {Math.max(0, cursor + 1)}/{events.length} events ·{" "}
                   {run.trace.filter(isNoise).length} wait-for-traffic ticks hidden
@@ -449,6 +468,7 @@ export default function Page() {
                     <div
                       key={g.step}
                       className={`grp st-${g.status}${current ? " cur" : ""}`}
+                      data-step={g.step}
                       ref={current ? currentRef : undefined}
                     >
                       <button
