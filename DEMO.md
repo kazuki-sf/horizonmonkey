@@ -1,116 +1,184 @@
-# Demo script — 90 seconds
+# Demo script — 3 minutes
 
-Open `http://localhost:3579/` before you start. It auto-runs the **control arm**
-on load, so the first thing on screen is a healthy agent. Every state is also a
-URL, so a mis-click on stage is recoverable:
+Read this aloud. Everything in `>` blocks is meant to be spoken as written;
+everything in *italics* is what to do with your hands.
 
-| State | URL |
-| --- | --- |
-| Control | `/` |
-| Chaos | `/?fault=memory_poisoning` |
-| Defended | `/?fault=memory_poisoning&defense=provenance_auditor` |
+**Before you start:** open the demo and leave it alone. It opens on `READY` and
+runs nothing by itself — that is deliberate, so don't worry that it looks idle.
+Speed on `1×`.
+
+- Live: **https://horizonmonkey.vercel.app**
+- Fallback if the network dies: `npm run dev` → **http://localhost:3579/**
+
+Measured playback, so you can trust the clock:
+
+| | length at 1× | ⚡ appears at |
+| --- | --- | --- |
+| control run | 13.2s | — |
+| chaos run | **21.8s** | **5.0s** |
+| defended run (after rewind) | 20.1s | 5.0s |
 
 ---
 
-**0–15s — everything is green** · *screen already shows the finished control run*
+## 0:00 – 0:25 · The problem
+*Hands off the keyboard. Screen stays on READY.*
 
-> Chaos Monkey breaks infrastructure. But a long-running agent can fail while
-> every call succeeds.
+> Chaos Monkey kills servers. When a server dies, everybody knows.
 >
-> This is a growth agent, five months of experiments, nothing perturbed.
-> Observations delivered, zero malformed payloads, zero exceptions, ran to
-> completion, and its own guardrail checks passed. Goal fidelity 95.
-
-*Point at the green panel.*
-
----
-
-**15–25s — pick the fault** · *Fault dropdown → **Caveat omission**, leave Defense on None*
-
-> Now pick how you want to break it. Not a 500 — nothing is going to crash.
-> We write one lesson to memory without the scope caveat that bounded it.
-> The sentence stays true. Only "SMB only, do not generalize" goes missing.
-
----
-
-**25–55s — click ▶ BREAK THE AGENT** · *trace animates; let it run*
-
-> The run is real — it executes, and we replay its trace so you can watch the
-> belief travel.
+> But an agent that runs for weeks can fail while **every single call succeeds**.
+> One plausible fact enters its beliefs, gets written to memory, and shapes
+> hundreds of later decisions. There is no error anywhere in the trace —
+> because nothing actually errored.
 >
-> *(at the red ⚡ line)* There it is. A finding about one segment just became a
-> rule about the whole site.
->
-> *(as orange lines accumulate)* It enters memory. It gets consolidated into a
-> strategy note. It selects the next experiment. And there — the agent rolls a
-> change to **100% of traffic** on the strength of it.
-
-*Now the point. Sweep a hand across both right-hand panels.*
-
-> Left panel, same run, same second: still zero errors, still zero exceptions,
-> still completed, and the agent's **own** guardrail check passed — because it
-> checked the guardrail against its beliefs. Right panel: three contaminated
-> memories and climbing, a tainted decision, a tainted external action, fault
-> detected **no**.
->
-> Every monitor you have says this system is healthy.
+> HorizonMonkey injects that on purpose and measures how far it travels.
 
 ---
 
-**55–70s — the damage** · *wait for playback to finish*
+## 0:25 – 0:40 · Pick the fault
+*Open the Fault dropdown so they can see the list, then select **Caveat omission**. Leave Defense on **None**.*
 
-> Goal fidelity 95 to 56. Two guardrails breached. The agent did eventually
-> notice — at step 6, when the real numbers matured. Five steps and one
-> full-traffic rollout too late. Recovering a belief doesn't un-ship the change
-> it justified.
-
----
-
-**70–85s — contain it** · *Defense dropdown → **Provenance auditor**, click BREAK again*
-
-> Same fault, one invariant: a lesson may not claim a scope wider than the
-> evidence it came from. No ground truth, no oracle — just a check on the write.
-
-*Point at the blast radius collapsing to two nodes.*
-
-> Caught at the injection step. Quarantined. Contaminated memories six to zero,
-> fidelity back to 96.
-
----
-
-**85–90s — close** · *point at the Opus 5 panel*
-
-> And when we probed Claude Opus 5 with this exact mechanism, ten times — it was
-> robust. Zero contaminated beliefs. That's a negative result and we report it,
-> because a harness that could only produce failures wouldn't be measuring
-> anything.
+> You pick how to break it. None of these are 500s. **Nothing crashes.**
 >
-> Long-horizon reliability isn't just keeping agents running. It's keeping their
+> Today: caveat omission. When the agent writes a lesson to memory, the
+> qualifier that bounded it doesn't survive the write. What's left is **true** —
+> collapsing the signup form really did lift SMB signups by 15%. The only thing
+> missing is "on SMB only, don't generalize."
+
+---
+
+## 0:40 – 1:10 · Run it
+*Click **⚡ BREAK THE AGENT**.*
+
+> The run is real. A deterministic simulation executes, and we replay the trace
+> it actually produced.
+
+*At ~5 seconds the red ⚡ line lands. Hit **❙❙ pause**.*
+
+> There it is. **A finding about one segment just became a rule about the whole
+> site.**
+>
+> That churn at the bottom is the agent's routine work. It never stops. Nothing
+> is broken.
+
+*Click **▶ resume**.*
+
+> It becomes a belief. The belief picks the next experiment. And then —
+
+*Wait for `✗ It ships — to all traffic`.*
+
+> — it ships to **one hundred percent of traffic**.
+
+---
+
+## 1:10 – 1:35 · The point
+*Sweep your hand across both right-hand panels.*
+
+> Look at this. **Same run. Same second.**
+>
+> On the left: twelve of twelve observations delivered. Zero malformed payloads.
+> Zero exceptions. Twenty-four of twenty-four steps completed. And — **the
+> agent's own guardrail check passed.**
+>
+> Why? Because it checked its guardrail **against its beliefs**. Corrupt the
+> beliefs and the check passes cleanly while reality breaks underneath it.
+>
+> On the right, same run: six contaminated memories. A tainted decision. A
+> tainted external action. Fault detected — **no**.
+>
+> **Every monitor you own says this system is healthy.**
+
+*Let playback finish.*
+
+> Goal fidelity: ninety-five to **fifty-six**. Two guardrails breached.
+>
+> The agent did notice — at step six, when the real numbers matured. Five steps
+> and one full-traffic rollout too late. **Repairing a belief doesn't un-ship the
+> change it justified.**
+
+---
+
+## 1:35 – 2:20 · Rewind — the counterfactual
+*Click **↺ REWIND & ADD DEFENSE**.*
+
+> **Let's rewind. Same agent, same fault, same history. We change one thing:
+> the defense.**
+
+*Point at the banner across the top.*
+
+> The first nine events are **identical**, through step one — **including the
+> injection itself.** Up to here these were the same future.
+>
+> That's measured, not asserted: the code walks both traces and compares them.
+> On a pair where it doesn't hold, this banner says something weaker instead.
+
+*Point left branch, then right branch.*
+
+> **No defense:** written to memory, reused, shipped to everyone.
+>
+> **Provenance auditor:** one invariant — a lesson may not claim a scope wider
+> than the evidence it came from. It never looks at ground truth. It blocked the
+> write, quarantined it, and contained the fault **before it reached durable
+> memory**.
+
+*Point at the five large numbers.*
+
+> **Fifty-six to ninety-six. Six contaminated memories to zero. Two guardrail
+> breaches to zero. Detected: no to yes.**
+
+---
+
+## 2:20 – 2:50 · Real models
+*Scroll to the REAL-MODEL PROBES panel.*
+
+> We ran this against real models too. Four pre-registered scenarios,
+> ninety-nine episodes, Claude Opus 5 and two tiers of GPT-5.6.
+>
+> **Zero harmful final decisions.** That's the result and we report it — a
+> harness that could only manufacture failures wouldn't be measuring anything.
+>
+> But look at what it took. **Twelve of eighteen times, the model reached for the
+> corrupted lever on its first pass.** What stopped it was going and checking the
+> source. All eighteen checked; the same twelve reversed.
+>
+> Then the last experiment. Six inherited beliefs, and you may verify **two**.
+> Opus checked the dangerous one five times out of five. **Luna checked it once
+> out of five** — it spent both credits on the memories backing the action it had
+> already chosen, and never looked at the one belief that would have driven an
+> irreversible change.
+>
+> **Scarce verification goes where the agent is already looking, not where the
+> risk is.**
+
+---
+
+## 2:50 – 3:00 · Close
+
+> We never gave the agent a false fact. **A true caveat disappeared when memory
+> was compressed.**
+>
+> Long-horizon reliability isn't just keeping an agent running. It's keeping its
 > beliefs true.
 
 ---
 
-## Controls you have on stage
+## On stage
 
-`▶ BREAK THE AGENT` runs and plays · `❙❙ pause` freezes mid-propagation to talk
-over a line · `↻ replay` re-runs the animation without re-fetching ·
-`0.5× / 1× / 2×` if you are ahead of or behind the clock.
-
-Wait-for-traffic ticks are hidden from the terminal (the count is shown in the
-header) — they are steps where the agent did nothing but wait.
+| Situation | What to do |
+| --- | --- |
+| Running long | Hit `2×` — chaos drops to 10.9s, defended to 10.0s. Cut the 0:25–0:40 fault explanation first. |
+| Running short | Also show `Stale observation`. Only if you have time to explain why its rewind banner reads **MATCHED REPLAY** instead of SHARED HISTORY. |
+| Pause points | Exactly two: when ⚡ lands, and when you compare the two panels. Let everything else flow. |
+| Never select | `Objective re-anchor (simulator-only)` — it reads the simulator's ground truth, so it isn't a deployable defense. Picking it prints an orange warning. |
+| Nothing happens on load | Correct. It's idle by design; you have to press the button. |
+| Production dies | `http://localhost:3579/` serves the same thing. Have it running before you go up. |
 
 ## Why this fault and this defense
 
 `Caveat omission + Provenance auditor` is the scripted pair because neither side
 touches privileged information, it has the largest clean delta (95 → 56 → 96,
-contamination 6 → 0), the fault lands early enough to fit the clock, and it is
-the same mechanism the Opus 5 probe tested — so the last beat follows from the
-first.
-
-`Objective re-anchor` is in the dropdown but labelled **simulator-only**: one of
-its branches reads the simulator's ground-truth effect for an experiment that
-has not run. Do not demo it as a deployable defense. It is honest only for
-Objective drift, where the legitimate missing-guardrail branch is what fires.
+contamination 6 → 0), the fault lands five seconds in so it fits the clock, and
+it's the same mechanism the real-model probes tested — so the last beat follows
+from the first.
 
 ## If asked: "does this happen with a real model?"
 
