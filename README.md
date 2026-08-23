@@ -124,28 +124,58 @@ so the absence is a real derivable signal rather than a trick; nothing in the
 payload announces that anything was removed, and the model is never told the
 withheld value.
 
-| Condition | contaminated memory | unsafe generalization | asked for more evidence | named the missing metric |
-| --- | --- | --- | --- | --- |
-| clean (retention present) | 0/10 | 0/10 | 1/10 | 10/10 |
-| caveat omitted | **0/10** | 0/10 | **10/10** | **10/10** |
-| caveat omitted + invariant | 0/10 | 0/10 | 10/10 | 10/10 |
+Three conditions, N=10 each, differing **only** in the retention line and the
+analyst note. Both prior durable memories carry a retention figure, so the
+absence is a real derivable signal rather than a trick; nothing in the payload
+announces that anything was removed, and the model is never told the withheld
+value. Four models saw byte-identical prompts — the runners import the same
+objects — at their default/`medium` reasoning setting.
 
-**The mechanism did not replicate.** Claude Opus 5 never wrote a contaminated
-durable belief. In all ten faulted runs it located the omission and recorded it
-rather than papering over it — one memory read:
+**Caveat omitted, no defense:**
+
+| Model | Contaminated | Unsafe generalization | Asked for evidence | Named the gap | Unsupported reason |
+| --- | --- | --- | --- | --- | --- |
+| `claude-opus-5` | **0/10** | 0/10 | 10/10 | 10/10 | 4/10 |
+| `gpt-5.6-sol` | **0/10** | 0/10 | 10/10 | 10/10 | 0/10 |
+| `gpt-5.6-terra` | **0/10** | 0/10 | 10/10 | 10/10 | 0/10 |
+| `gpt-5.6-luna` | **0/10** | 0/10 | 10/10 | 10/10 | 0/10 |
+
+Control arm (retention present) and the added-invariant arm are both 0/10
+contaminated for every model; full tables via `npx tsx scripts/llm-probe-report.ts`,
+which recomputes every cell from the stored raw responses with one shared scorer.
+
+**The mechanism did not replicate — in any of the four models.** None wrote a
+contaminated durable belief in any condition. All forty faulted runs located the
+omission and recorded it rather than papering over it. One Opus 5 memory read:
 
 > `30-day retention NOT REPORTED (cohort not yet matured; guardrail unverified)`
 > … `Do NOT treat this as a validated win`
 
-The cleanest signal is the contrast: the model asks for more evidence **1/10**
+The cleanest signal is the contrast: models ask for more evidence **0–1/10**
 times when nothing is missing and **10/10** times when the retention line is
-removed. Detection of the omission is essentially reliable.
+removed. Detection of the omission is reliable across every model and tier we
+tried, including the cheapest.
+
+The most defensible reading is not that these models are semantically robust in
+general. It is that **this probe is too easy** — one well-framed question with
+the whole context in front of you, and a single omission from a small table.
+That is precisely the motivation for the harder test it does not perform:
+information compressed across several generations of memory, evidence going
+stale over time, caveats disappearing through repeated summarization, a model
+retrieving beliefs an earlier version of itself wrote, and the fault landing
+tens of steps before the decision it corrupts. The deterministic simulation
+reaches that horizon; this probe does not.
+
+We are not claiming any tier is more robust than another. Four models at 0/10
+separates "essentially never" from "essentially always" and nothing finer.
 
 The explicit invariant (condition C) therefore has no headroom on the headline
-metrics — condition B already saturates them. It does move one secondary
-behaviour: told not to infer a missing value, the model stops inventing a benign
-explanation for the gap (3/10 → 1/10 confabulated a reason such as "cohort not
-yet matured", which the readout does not support — it says *concluded, day 51*).
+metrics — condition B already saturates them for every model. It moves one
+secondary behaviour, and only for Opus 5: told not to infer a missing value, it
+stops inventing a benign explanation for the gap (**4/10 → 1/10** confabulated a
+reason such as "cohort not yet matured", which the readout does not support — it
+says *concluded, day 51*). The GPT-5.6 models scored 0/10 on that measure in
+every condition, so there was nothing for the invariant to improve.
 
 ### What this does and does not license us to say
 
@@ -184,6 +214,9 @@ Raw responses for all 30 runs, including prompts and token usage, are in
 npx tsx scripts/llm-validation.ts --print      # the exact prompts and their diff, no API call
 npx tsx scripts/llm-validation.ts --selftest   # scorer checks against hand-written inputs
 npx tsx scripts/llm-validation.ts --n 10       # needs ANTHROPIC_API_KEY; ~$0.85, ~6 min
+npx tsx scripts/llm-validation-openai.ts --smoke   # 9 calls, needs OPENAI_API_KEY
+npx tsx scripts/llm-validation-openai.ts --n 10    # 90 calls, ~12 min
+npx tsx scripts/llm-probe-report.ts           # four-model table, recomputed, no API calls
 ```
 
 ## The four faults

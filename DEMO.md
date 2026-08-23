@@ -114,12 +114,18 @@ Objective drift, where the legitimate missing-guardrail branch is what fires.
 
 ## If asked: "does this happen with a real model?"
 
-We checked one mechanism, and the honest answer is **no, not at this horizon.**
-Separate isolated probe, Claude Opus 5, N=10 per condition: hand it the same
-incomplete readout — the retention line removed, nothing marking the removal —
-and it wrote a contaminated durable belief 0/10 times. It asks for more evidence
-1/10 times when nothing is missing and 10/10 times when the line is gone. It
-catches it.
+We checked one mechanism against four models, and the honest answer is **no, not
+at this horizon.** Same isolated probe, byte-identical prompts, N=10 per
+condition: Claude Opus 5, GPT-5.6 Sol, Terra and Luna all wrote a contaminated
+durable belief **0/10** times. All forty faulted runs named the missing metric
+and asked for it. Even the cheapest tier caught it.
+
+The honest reading is not "these models are robust." It is **this probe is too
+easy** — one question, full context, one omission from a small table. Which is
+the argument for the harder test: caveats lost through repeated summarization,
+beliefs an earlier version of the model wrote, and a fault landing tens of steps
+before the decision it corrupts. That is the horizon the deterministic
+simulation reaches and the probe does not.
 
 That is a real negative result and we report it as one. What it does not do is
 validate the long-horizon claim, because it is not the same test: one

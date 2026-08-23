@@ -66,20 +66,133 @@ function lineClass(e: TraceEvent) {
   return "line norm";
 }
 
-/** Every demo state is linkable, so a mis-click on stage is recoverable. */
-function fromUrl(): { fault: FaultChoice; defense: DefenseId | "" } {
-  if (typeof window === "undefined") return { fault: "none", defense: "" };
+/**
+ * Every demo state is linkable, so a mis-click on stage is recoverable. A URL
+ * only *selects* the configuration — the page stays idle until the Run button
+ * is pressed. `&autorun=1` is the one explicit opt-out of that, kept as a stage
+ * fallback and for automated checks; it is never the default path.
+ */
+function fromUrl(): { fault: FaultChoice; defense: DefenseId | ""; autorun: boolean } {
+  if (typeof window === "undefined") return { fault: "none", defense: "", autorun: false };
   const q = new URLSearchParams(window.location.search);
   const f = q.get("fault") as FaultChoice | null;
   const d = q.get("defense") as DefenseId | null;
   return {
     fault: FAULTS.some((x) => x.id === f) ? (f as FaultChoice) : "none",
     defense: DEFENSES.some((x) => x.id === d) ? (d as DefenseId) : "",
+    autorun: q.get("autorun") === "1",
   };
 }
 
+
+// ---------------------------------------------------------------------------
+// Step grouping.
+//
+// Purely presentational: 79 recorded events become 18 legible groups. Nothing is
+// added to the trace and no event is dropped — a group is exactly the events
+// that already share a `step`, and expanding one shows them verbatim.
+//
+// Status and badges are computed from the events *played so far*, not from the
+// whole group, so a step does not reveal that it contains a fault before the
+// fault line actually appears.
+// ---------------------------------------------------------------------------
+
+type StepStatus = "fault" | "defense" | "recovery" | "failure" | "tainted" | "healthy";
+
+type StepGroup = {
+  step: number;
+  events: TraceEvent[];
+  status: StepStatus;
+  title: string;
+  summary?: string;
+  taint: number;
+  badges: string[];
+};
+
+const STATUS_GLYPH: Record<StepStatus, string> = {
+  fault: "⚡",
+  defense: "🛡",
+  recovery: "↺",
+  failure: "✗",
+  tainted: "⚠",
+  healthy: "✓",
+};
+
+/** Text before the metric tail, e.g. "Collapse signup to a single field · smb". */
+const head = (s: string) => s.split(" — ")[0].trim();
+
+function groupSteps(events: TraceEvent[]): StepGroup[] {
+  const byStep = new Map<number, TraceEvent[]>();
+  for (const e of events) {
+    if (!byStep.has(e.step)) byStep.set(e.step, []);
+    byStep.get(e.step)!.push(e);
+  }
+
+  return [...byStep.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([step, evs]) => {
+      const fault = evs.find((e) => e.isFaultOrigin);
+      const defense = evs.find((e) => e.type === "fault_detection");
+      const recovery = evs.find((e) => e.type === "recovery");
+      const badAction = evs.find((e) => e.type === "action" && e.faultIds.length > 0);
+      const taint = evs.filter((e) => e.faultIds.length > 0 && !e.isFaultOrigin).length;
+
+      // Precedence. The injection point outranks its own consequences: it is the
+      // one place in the run where something entered, and it is what the
+      // audience needs to find.
+      const status: StepStatus = fault
+        ? "fault"
+        : defense
+          ? "defense"
+          : recovery
+            ? "recovery"
+            : badAction
+              ? "failure"
+              : taint > 0
+                ? "tainted"
+                : "healthy";
+
+      // Title: what the agent was doing this step, by source priority.
+      const obs = evs.find((e) => e.type === "observation");
+      const dec = evs.find((e) => e.type === "decision");
+      const strategy = evs.find(
+        (e) => e.type === "memory_write" && /Strategy note/.test(e.summary)
+      );
+      const title = obs
+        ? `Read ${head(obs.summary)}`
+        : strategy
+          ? "Consolidate strategy"
+          : dec
+            ? "Select next experiment"
+            : evs[0]
+              ? evs[0].type.replace(/_/g, " ")
+              : "";
+
+      // Summary: the most consequential thing that happened, verbatim from the
+      // event that happened. Omitted rather than invented when nothing stands out.
+      const act = [...evs].reverse().find((e) => e.type === "action");
+      const src = fault ?? defense ?? recovery ?? badAction ?? act ?? strategy;
+      const summary = src && src.summary !== title ? src.summary : undefined;
+
+      const badges: string[] = [];
+      if (fault) badges.push("⚡ FAULT");
+      if (defense) badges.push("🛡 DEFENSE");
+      if (recovery) badges.push("↺ RECOVERED");
+      if (badAction) badges.push("✗ ACTION");
+      if (taint > 0) badges.push(`⚠ ${taint} TAINTED`);
+
+      return { step, events: evs, status, title, summary, taint, badges };
+    });
+}
+
+/** Steps worth leaving open after they finish. Routine work collapses. */
+const isNotable = (g: StepGroup) => g.status !== "healthy";
+
 export default function Page() {
-  const initial = typeof window === "undefined" ? { fault: "none" as FaultChoice, defense: "" as DefenseId | "" } : fromUrl();
+  const initial =
+    typeof window === "undefined"
+      ? { fault: "none" as FaultChoice, defense: "" as DefenseId | "", autorun: false }
+      : fromUrl();
   const [fault, setFault] = useState<FaultChoice>(initial.fault);
   const [defense, setDefense] = useState<DefenseId | "">(initial.defense);
   const [data, setData] = useState<Comparison | null>(null);
@@ -88,6 +201,8 @@ export default function Page() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Manual expand/collapse overrides. Cleared on replay and on a new run. */
+  const [manual, setManual] = useState<Record<number, boolean>>({});
 
   /** Which arm of the comparison is on screen. */
   const arm: "baseline" | "chaos" | "defended" =
@@ -103,6 +218,15 @@ export default function Page() {
 
   const events = useMemo(() => (run ? run.trace.filter((e) => !isNoise(e)) : []), [run]);
   const done = cursor >= events.length - 1 && events.length > 0;
+  const status: "ready" | "running" | "playing" | "paused" | "done" = busy
+    ? "running"
+    : !run
+      ? "ready"
+      : done
+        ? "done"
+        : playing
+          ? "playing"
+          : "paused";
 
   const stop = () => {
     if (timer.current) clearTimeout(timer.current);
@@ -124,6 +248,7 @@ export default function Page() {
     stop();
     setBusy(true);
     setCursor(-1);
+    setManual({});
     setPlaying(false);
     const res = await fetch("/api/run", {
       method: "POST",
@@ -141,20 +266,22 @@ export default function Page() {
     const q = new URLSearchParams();
     if (fault !== "none") q.set("fault", fault);
     if (defense) q.set("defense", defense);
+    // autorun is deliberately not written back — a copied URL stays idle.
     window.history.replaceState(null, "", q.toString() ? `?${q}` : "/");
   }, [fault, defense]);
 
-  // Open on the control arm so the first thing anyone sees is a healthy run.
+  // Opt-in only: `?...&autorun=1`. The bare URL never executes anything.
   const booted = useRef(false);
   useEffect(() => {
-    if (booted.current) return;
+    if (booted.current || !initial.autorun) return;
     booted.current = true;
     void execute();
-  }, [execute]);
+  }, [execute, initial.autorun]);
 
   const replay = () => {
     stop();
     setCursor(-1);
+    setManual({});
     setPlaying(true);
   };
 
@@ -170,11 +297,18 @@ export default function Page() {
     injected: seen.some((e) => e.isFaultOrigin),
   };
 
+  const groups = useMemo(() => groupSteps(seen), [seen]);
+  const currentStep = seen.at(-1)?.step ?? -1;
+
   const bodyRef = useRef<HTMLDivElement>(null);
+  const currentRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = bodyRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [cursor]);
+    // Keep the step being played in view rather than snapping to the bottom —
+    // a fault step deliberately left open above must not scroll away. Paused
+    // means the presenter is driving, so stop moving the viewport at all.
+    if (!playing) return;
+    currentRef.current?.scrollIntoView({ block: "nearest" });
+  }, [cursor, playing]);
 
   return (
     <div className="wrap">
@@ -234,7 +368,7 @@ export default function Page() {
         </div>
 
         <button className="break-btn" onClick={execute} disabled={busy}>
-          {busy ? "running…" : fault === "none" ? "▶  RUN CONTROL" : "▶  BREAK THE AGENT"}
+          {busy ? "running…" : fault === "none" ? "▶  RUN BASELINE" : "⚡  BREAK THE AGENT"}
         </button>
 
         {events.length > 0 && (
@@ -253,6 +387,21 @@ export default function Page() {
           </>
         )}
 
+        <span className={`status-chip s-${status}`}>
+          <span className="sd" />
+          {status === "ready"
+            ? run === null && (fault !== "none" || defense)
+              ? "READY — configuration selected"
+              : "READY"
+            : status === "running"
+              ? "EXECUTING RUN"
+              : status === "playing"
+                ? "REPLAYING TRACE"
+                : status === "paused"
+                  ? "PAUSED"
+                  : "RUN COMPLETE"}
+        </span>
+
         {defense === "guardrail_checker" && (
           <span className="oracle-note">
             ⚠ oracle-assisted — reads simulator ground truth, not deployable
@@ -261,9 +410,24 @@ export default function Page() {
       </div>
 
       {!run ? (
-        <div className="loading">
-          Select a fault and press {fault === "none" ? "RUN CONTROL" : "BREAK THE AGENT"}. The
-          deterministic run executes immediately; the trace is then replayed event by event.
+        <div className="idle">
+          <div className="idle-term">
+            <div className="term-bar">
+              <span className="dot" />
+              live agent trace
+              <span className="right">idle</span>
+            </div>
+            <div className="idle-body">
+              <div className="idle-line">Waiting for run…</div>
+              <div className="idle-sub">
+                Choose a fault and a defense, then press{" "}
+                <b>{fault === "none" ? "RUN BASELINE" : "BREAK THE AGENT"}</b>.
+              </div>
+              <div className="idle-sub dim">
+                Nothing has been executed. No results are shown until a run completes.
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <>
@@ -273,22 +437,62 @@ export default function Page() {
                 <span className={`dot${playing ? " live" : ""}`} />
                 live agent trace · {arm}
                 <span className="right">
-                  {Math.max(0, cursor + 1)}/{events.length} events · {run.trace.filter(isNoise).length}{" "}
-                  wait-for-traffic ticks hidden
+                  {groups.length} steps · {Math.max(0, cursor + 1)}/{events.length} events ·{" "}
+                  {run.trace.filter(isNoise).length} wait-for-traffic ticks hidden
                 </span>
               </div>
               <div className="term-body" ref={bodyRef}>
-                {seen.map((e, i) => (
-                  <div key={e.id} className={`${lineClass(e)}${i === seen.length - 1 ? " line-in" : ""}`}>
-                    <span className="n">{String(e.step).padStart(2, "0")}</span>
-                    <span className="g">{glyph(e)}</span>
-                    <span className="t">
-                      <b>{e.type.replace(/_/g, " ")}</b> — {e.summary}
-                      {e.isFaultOrigin && e.detail ? ` · ${e.detail}` : ""}
-                    </span>
-                  </div>
-                ))}
-                {playing && <div className="cursor-row" />}
+                {groups.map((g) => {
+                  const current = g.step === currentStep;
+                  const open = manual[g.step] ?? (current || isNotable(g));
+                  return (
+                    <div
+                      key={g.step}
+                      className={`grp st-${g.status}${current ? " cur" : ""}`}
+                      ref={current ? currentRef : undefined}
+                    >
+                      <button
+                        className="grp-hd"
+                        onClick={() => setManual((m) => ({ ...m, [g.step]: !open }))}
+                      >
+                        <span className="chev">{open ? "▾" : "▸"}</span>
+                        <span className="gs">{STATUS_GLYPH[g.status]}</span>
+                        <span className="gt">
+                          <b>Step {String(g.step).padStart(2, "0")}</b> — {g.title}
+                          {g.summary && <span className="gsum">{g.summary}</span>}
+                        </span>
+                        <span className="gmeta">
+                          {g.badges.map((b) => (
+                            <span key={b} className="badge">
+                              {b}
+                            </span>
+                          ))}
+                          <span className="cnt">{g.events.length} events</span>
+                        </span>
+                      </button>
+                      {open && (
+                        <div className="grp-body">
+                          {g.events.map((e, i) => (
+                            <div
+                              key={e.id}
+                              className={`${lineClass(e)}${
+                                current && i === g.events.length - 1 ? " line-in" : ""
+                              }`}
+                            >
+                              <span className="n">{String(e.step).padStart(2, "0")}</span>
+                              <span className="g">{glyph(e)}</span>
+                              <span className="t">
+                                <b>{e.type.replace(/_/g, " ")}</b> — {e.summary}
+                                {e.isFaultOrigin && e.detail ? ` · ${e.detail}` : ""}
+                              </span>
+                            </div>
+                          ))}
+                          {current && playing && <div className="cursor-row" />}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
