@@ -56,10 +56,12 @@ const isNoise = (e: TraceEvent) => e.type === "evaluation";
  * wall of scrolling text with nowhere to look.
  */
 function dwell(e: TraceEvent, isBeat: boolean): number {
-  if (e.isFaultOrigin) return 2600;
-  if (isBeat) return e.type === "action" ? 2200 : 1800;
+  if (e.isFaultOrigin) return 2400;
+  if (isBeat) return e.type === "action" ? 2000 : 1600;
   if (e.type === "fault_detection" || e.type === "recovery") return 1600;
-  return 60;
+  // Fast, but not a blur. Routine work has to read as work — at 60ms it looked
+  // like nothing was happening, which is its own kind of wrong.
+  return 150;
 }
 
 function glyph(e: TraceEvent) {
@@ -575,7 +577,7 @@ export default function Page() {
           ) : (
           <div className="stage">
             {view === "story" ? (
-              <Story beats={allBeats} seen={seenBeats} total={events.length} cursor={cursor} onToggle={() => setView("trace")} />
+              <Run beats={allBeats} seen={seenBeats} events={events} cursor={cursor} total={events.length} playing={playing} onToggle={() => setView("trace")} />
             ) : (
             <div className="term">
               <div className="term-bar">
@@ -936,44 +938,79 @@ function Counterfactual({ data }: { data: Comparison }) {
  * a room, with the beats behind it kept visible as a short rail so the audience
  * can see the shape of the story without scrolling anything.
  */
-function Story({
-  beats, seen, total, cursor, onToggle,
-}: { beats: Beat[]; seen: Beat[]; total: number; cursor: number; onToggle: () => void }) {
-  const now = seen[seen.length - 1];
+/**
+ * Two zones, because a run is two things at once.
+ *
+ * The first attempt showed every event and scrolled: too much motion, nowhere
+ * to look. The second showed one beat at a time: readable, but it looked like
+ * nothing was happening. Neither was right — the churn is real information (the
+ * agent *is* working) and the milestones are the story.
+ *
+ * So: milestones pin at the top and never move again once placed, and the
+ * routine instrumentation churns below them in a fixed-height window that shows
+ * only the last few lines. Motion in one place, permanence in the other, and
+ * nothing scrolls.
+ */
+function Run({
+  beats, seen, events, cursor, total, playing, onToggle,
+}: {
+  beats: Beat[]; seen: Beat[]; events: TraceEvent[]; cursor: number;
+  total: number; playing: boolean; onToggle: () => void;
+}) {
+  const LIVE = 5;
+  const beatIds = new Set(beats.map((b) => b.event.id));
+  const churn = events
+    .slice(0, cursor + 1)
+    .filter((e) => !beatIds.has(e.id))
+    .slice(-LIVE);
+  const step = cursor >= 0 ? events[cursor]?.step ?? 0 : 0;
+
   return (
-    <div className="story">
-      <div className="story-bar">
-        <span>the story · {seen.length}/{beats.length} beats</span>
+    <div className="run">
+      <div className="run-bar">
+        <span>the run{cursor >= 0 && <> · step {String(step).padStart(2, "0")}</>}</span>
         <button className="mini-btn" style={{ padding: "3px 9px", fontSize: 10 }} onClick={onToggle}>
-          show full trace ({total} events) →
+          full trace ({total} events) →
         </button>
       </div>
 
-      <div className="story-now">
-        {now ? (
-          <>
-            <div className={`sn-badge k-${now.kind}`}>
-              {BEAT_GLYPH[now.kind]} step {String(now.event.step).padStart(2, "0")}
+      <div className="milestones">
+        {seen.length === 0 && <div className="ms-empty">{cursor < 0 ? "ready" : "working…"}</div>}
+        {seen.map((b, i) => (
+          <div key={b.event.id} className={`ms k-${b.kind}${i === seen.length - 1 ? " fresh" : ""}`}>
+            <span className="ms-g">{BEAT_GLYPH[b.kind]}</span>
+            <div className="ms-body">
+              <div className="ms-head">{b.headline}</div>
+              <div className="ms-raw">
+                <span className="ms-step">s{String(b.event.step).padStart(2, "0")}</span>
+                {b.event.summary}
+              </div>
             </div>
-            <div className={`sn-head k-${now.kind}`}>{now.headline}</div>
-            <div className="sn-raw">{now.event.summary}</div>
-          </>
-        ) : (
-          <div className="sn-wait">{cursor < 0 ? "ready" : "running…"}</div>
+          </div>
+        ))}
+        {seen.length > 0 && seen.length < beats.length && (
+          <div className="ms next">
+            <span className="ms-g">·</span>
+            <div className="ms-body">
+              <div className="ms-head dim">{beats[seen.length].headline}</div>
+            </div>
+          </div>
         )}
       </div>
 
-      <div className="story-rail">
-        {beats.map((b, i) => {
-          const reached = i < seen.length;
-          const current = i === seen.length - 1;
-          return (
-            <div key={b.event.id} className={`rail-item k-${b.kind}${reached ? " on" : ""}${current ? " cur" : ""}`}>
-              <span className="rg">{BEAT_GLYPH[b.kind]}</span>
-              <span className="rt">{b.headline}</span>
+      <div className="live">
+        <div className="live-label">
+          <span className={`ldot${playing ? " on" : ""}`} />
+          agent activity
+        </div>
+        <div className="live-rows">
+          {churn.map((e, i) => (
+            <div key={e.id} className="live-row" style={{ opacity: 0.25 + (i / Math.max(1, churn.length - 1)) * 0.75 }}>
+              <span className="lr-t">{e.type.replace(/_/g, " ")}</span>
+              <span className="lr-s">{e.summary}</span>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );

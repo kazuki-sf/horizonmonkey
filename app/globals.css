@@ -411,44 +411,56 @@ header.top { display: flex; align-items: flex-start; justify-content: space-betw
 .cf-foot { margin-top: 14px; font-size: 11.5px; color: var(--ink-faint); line-height: 1.6; }
 
 /* ==========================================================================
-   Story view — one beat at a time, readable from the back of a room.
+   Run surface — milestones pin above, routine activity churns below.
    ========================================================================== */
-.story { background: var(--panel); border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
-.story-bar {
+.run { background: var(--panel); border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+.run-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 9px 14px; border-bottom: 1px solid var(--line-soft); background: var(--panel-2);
   font-family: var(--mono); font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-faint);
 }
-.story-now { padding: 34px 30px 32px; min-height: 210px; display: flex; flex-direction: column; justify-content: center; }
-.sn-badge {
-  align-self: flex-start; font-family: var(--mono); font-size: 11px; letter-spacing: 1.2px;
-  text-transform: uppercase; border: 1px solid currentColor; border-radius: 5px; padding: 3px 9px; opacity: .9;
-}
-.sn-head { font-size: 30px; line-height: 1.2; font-weight: 600; letter-spacing: -0.5px; margin-top: 16px; color: var(--ink); }
-.sn-raw {
-  margin-top: 16px; font-family: var(--mono); font-size: 14px; line-height: 1.65;
-  color: var(--ink-dim); max-width: 70ch;
-}
-.sn-wait { font-family: var(--mono); font-size: 14px; color: var(--ink-faint); }
-.k-context { color: var(--ok); }
-.k-fault    { color: var(--bad); }
-.k-taint    { color: var(--taint); }
-.k-harm     { color: var(--bad); }
-.k-defense  { color: var(--ok); }
-.sn-head.k-fault, .sn-head.k-harm { color: #ffd3d3; }
-.sn-head.k-taint { color: #ffbb95; }
-.sn-head.k-defense { color: #a5f3cf; }
-.sn-head.k-context { color: var(--ink); }
 
-.story-rail { border-top: 1px solid var(--line-soft); background: rgba(0,0,0,.2); padding: 4px 0; }
-.rail-item {
-  display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: baseline;
-  padding: 8px 18px; font-size: 13.5px; color: #333b4d; border-left: 2px solid transparent;
+/* ---- milestones: placed once, never move again ---- */
+.milestones { padding: 10px 18px 12px; min-height: 210px; }
+.ms-empty { font-family: var(--mono); font-size: 13px; color: var(--ink-faint); padding: 8px 0; }
+.ms { display: grid; grid-template-columns: 22px 1fr; gap: 11px; padding: 7px 0; align-items: baseline; }
+.ms + .ms { border-top: 1px solid #171b25; }
+.ms-g { text-align: center; font-size: 14px; }
+.ms-head { font-size: 16.5px; font-weight: 600; line-height: 1.25; letter-spacing: -0.2px; color: var(--ink); }
+.ms-head.dim { color: #333b4d; font-weight: 500; font-size: 15px; }
+/* One line, clipped. The full text is a click away in the trace view; here it
+   only has to prove the headline is describing a real recorded event. */
+.ms-raw {
+  margin-top: 4px; font-family: var(--mono); font-size: 12px; line-height: 1.5;
+  color: var(--ink-dim); display: flex; gap: 9px; white-space: nowrap; overflow: hidden;
 }
-.rail-item .rg { text-align: center; font-size: 12px; }
-.rail-item.on { color: var(--ink-dim); }
-.rail-item.on .rg { color: currentColor; }
-.rail-item.cur { color: var(--ink); border-left-color: currentColor; background: rgba(255,255,255,.03); font-weight: 500; }
-.rail-item.on.k-fault, .rail-item.on.k-harm { color: #ff9d9d; }
-.rail-item.on.k-taint { color: var(--taint); }
-.rail-item.on.k-defense { color: var(--ok); }
+.ms-raw > :last-child { overflow: hidden; text-overflow: ellipsis; }
+.ms-raw .ms-step { color: #3d465c; flex-shrink: 0; }
+.ms.k-context .ms-g { color: var(--ok); }
+.ms.k-fault   .ms-g, .ms.k-harm .ms-g { color: var(--bad); }
+.ms.k-taint   .ms-g { color: var(--taint); }
+.ms.k-defense .ms-g { color: var(--ok); }
+.ms.k-fault .ms-head, .ms.k-harm .ms-head { color: #ffd3d3; }
+.ms.k-taint .ms-head { color: #ffbb95; }
+.ms.k-defense .ms-head { color: #a5f3cf; }
+.ms.next .ms-g { color: #2b3242; }
+.ms.fresh { animation: msin .35s ease-out; }
+@keyframes msin { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+
+/* ---- live activity: fixed height, always moving, never scrolls ---- */
+.live { border-top: 1px solid var(--line-soft); background: #0a0c12; padding: 9px 18px 11px; height: 120px; overflow: hidden; }
+.live-label {
+  display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 9.5px;
+  letter-spacing: 1.2px; text-transform: uppercase; color: #3d465c; margin-bottom: 7px;
+}
+.ldot { width: 6px; height: 6px; border-radius: 50%; background: #2a3040; }
+.ldot.on { background: var(--taint); animation: pulse 1s ease-in-out infinite; }
+.live-rows { display: flex; flex-direction: column; justify-content: flex-end; height: 86px; }
+.live-row {
+  display: grid; grid-template-columns: 116px 1fr; gap: 12px; font-family: var(--mono);
+  font-size: 12px; line-height: 1.6; color: var(--ink-dim); white-space: nowrap; overflow: hidden;
+  animation: livein .18s ease-out;
+}
+.live-row .lr-t { color: #4a5468; text-align: right; }
+.live-row .lr-s { overflow: hidden; text-overflow: ellipsis; }
+@keyframes livein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
