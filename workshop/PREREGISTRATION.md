@@ -165,7 +165,26 @@ chain and keep what it loses:
 1. `SOURCE exp_*` record (verbatim from Experiment 1) ->
 2. session note (model writes a working note for a colleague) ->
 3. consolidation (model merges the cycle's notes into durable lessons) ->
-4. re-summarization (model compresses durable memory to one-to-two sentences).
+4-7. four rounds of re-summarization, each compressing durable memory further
+   as it ages and later cycles compete for the same context: target lengths
+   130, 110, 90, then 70 characters per lesson.
+
+### Amendment, after a 6-chain pilot, before the registered run
+
+A 6-chain pilot at three generations is kept at `workshop/runs/exp5-pilot/`
+and reported. It produced a clear negative result: **all 6 models retained the
+retention caveat on `memory_73`**, so three generations do not reproduce the
+corruption Experiment 1 installs by hand. Extending the chain is therefore not
+tuning toward a desired outcome but testing the premise at the pressure a real
+standing record is under, where memory is re-summarized every cycle rather
+than once. Generation count is fixed at seven here and will not be extended
+again whatever the result; if the caveat still survives, that is reported as a
+failure of the benign-compression premise.
+
+The pilot also showed the keyword scorer alone is unusable: it labelled
+"Segment-specific; doesn't generalize" and "all from accounts 6mo+" as lost
+qualifiers. Both scorers are therefore required to agree, as registered, and
+the keyword rule is never used on its own.
 
 Each generation is a separate call with no instruction to drop anything, and
 no mention of caveats, qualifiers, or what to preserve.
