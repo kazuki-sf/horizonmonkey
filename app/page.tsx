@@ -215,6 +215,67 @@ function sharedPrefix(a: TraceEvent[], b: TraceEvent[]) {
   };
 }
 
+/**
+ * The story, not the log.
+ *
+ * A run records 79 events and groups into 18 steps. Neither is watchable: the
+ * routine work repeats, the type is small, and a scrolling list gives an
+ * audience nowhere to rest their eyes. Six things actually happen — a caveat
+ * disappears, it becomes a belief, the belief picks an experiment, the
+ * experiment ships to everyone, and something eventually notices.
+ *
+ * Each beat is a real trace event. The headline names what that event *is* in
+ * the arc; the event's own text is shown underneath, unedited, so nothing here
+ * is a claim the trace does not already make.
+ */
+type Beat = { event: TraceEvent; headline: string; kind: "context" | "fault" | "taint" | "harm" | "defense" };
+
+function storyBeats(trace: TraceEvent[]): Beat[] {
+  const first = (p: (e: TraceEvent) => boolean) => trace.find(p);
+  const tainted = (t: TraceEvent["type"]) => first((e) => e.type === t && e.faultIds.length > 0 && !e.isFaultOrigin);
+
+  const picks: (Beat | undefined)[] = [
+    (() => {
+      const e = first((x) => x.type === "observation");
+      return e && { event: e, headline: "The agent is running normally", kind: "context" as const };
+    })(),
+    (() => {
+      const e = first((x) => x.isFaultOrigin === true);
+      return e && { event: e, headline: "A true caveat disappears", kind: "fault" as const };
+    })(),
+    (() => {
+      const e = tainted("memory_write");
+      return e && {
+        event: e,
+        headline: e.quarantined ? "The write is quarantined" : "It becomes a durable belief",
+        kind: e.quarantined ? ("defense" as const) : ("taint" as const),
+      };
+    })(),
+    (() => {
+      const e = tainted("decision");
+      return e && { event: e, headline: "The belief picks the next experiment", kind: "taint" as const };
+    })(),
+    (() => {
+      const e = tainted("action");
+      return e && { event: e, headline: "It ships — to all traffic", kind: "harm" as const };
+    })(),
+    (() => {
+      const e = first((x) => x.type === "fault_detection");
+      return e && { event: e, headline: "The invariant catches it", kind: "defense" as const };
+    })(),
+    (() => {
+      const e = first((x) => x.type === "recovery");
+      return e && { event: e, headline: "Corrected — but the change already shipped", kind: "defense" as const };
+    })(),
+  ];
+
+  return (picks.filter(Boolean) as Beat[])
+    .filter((b, i, a) => a.findIndex((x) => x.event.id === b.event.id) === i)
+    .sort((a, b) => trace.indexOf(a.event) - trace.indexOf(b.event));
+}
+
+const BEAT_GLYPH: Record<Beat["kind"], string> = { context: "✓", fault: "⚡", taint: "⚠", harm: "✗", defense: "🛡" };
+
 /** Steps worth leaving open after they finish. Routine work collapses. */
 const isNotable = (g: StepGroup) => g.status !== "healthy";
 
