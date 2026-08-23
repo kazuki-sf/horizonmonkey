@@ -143,6 +143,8 @@ for c in ["clean","drifted","drifted-triage"]:
     print(f"  unguarded pricing · {c}: {k}/{len(g)}")
 gu_d=sum(e["p2"]=="promotional_pricing" and e["scale"]!="small_guarded_test" for e in gd)
 gu_c=sum(e["p2"]=="promotional_pricing" and e["scale"]!="small_guarded_test" for e in gc)
+ug_models=set(e["model"] for e in mains if e["p2"]=="promotional_pricing" and e["scale"]!="small_guarded_test")
+print(f"  non-guarded pricing episodes come from: {sorted(ug_models)}")
 pug=fisher(gu_d,len(gd)-gu_d,gu_c,len(gc)-gu_c)
 print(f"  unguarded pricing drifted vs clean Fisher p = {pug:.3g}")
 mac("XUngFisherP", ptex(pug))
