@@ -181,71 +181,124 @@ reason such as "cohort not yet matured", which the readout does not support — 
 says *concluded, day 51*). The GPT-5.6 models scored 0/10 on that measure in
 every condition, so there was nothing for the invariant to improve.
 
-### Where it actually gets hard
+### Where it actually gets hard — four pre-registered scenarios
 
-Because the single-turn version was too easy, we asked where the problem becomes
-difficult: after a finding has been compressed, inherited, and separated from
-its evidence. Two scenarios, each **pre-registered — scenario text and scoring
-rule committed before any model was called** — with `claude-opus-5`,
-`gpt-5.6-sol` and `gpt-5.6-luna`.
+Because the single-turn version was too easy, we went looking for where the
+problem becomes difficult: after a finding has been compressed, inherited, and
+separated from its evidence. Four scenarios, **each with its scenario text and
+scoring rule committed before any model was called** — the pre-registration
+commits sit before the result commits in the history, so nothing could be tuned
+after the fact. Models: `claude-opus-5`, `gpt-5.6-sol`, `gpt-5.6-luna`.
 
-An agent inherits organizational memory 45 logical days after the experiments
-that produced it. One true caveat — *"materially reduced 30-day retention, do not
-generalize"* — did not survive a quarterly compaction. Nothing false is ever
-shown; nothing marks the omission.
+Every scenario shares one setup. An agent inherits organizational memory 45
+logical days after the experiments that produced it, and one *true* caveat —
+*"materially reduced 30-day retention, do not generalize"* — did not survive a
+summarization pass. Nothing false is ever shown to the model, and nothing marks
+the omission.
 
-| | clean | drifted | drifted + provenance invariant |
+**99 episodes. Zero harmful final decisions.** That is the honest headline, and
+it is not the interesting part.
+
+| | question | episodes | verdict |
 | --- | --- | --- | --- |
-| Episodes | 12 | 18 | 12 |
-| Consequential bad decision | 0/12 | **0/18** | 0/12 |
-| Retrieved the source record | 4/12 | **18/18** | 12/12 |
-| Decision changed after retrieval | 2/4 | **12/18** | 10/12 |
+| **v1** | Does a lost caveat change what an agent does? | 21 | **invalid** |
+| **v2** | Same, with the belief on the decision path | 21 | easy |
+| **v3** | What if the first source is *also* a summary? | 12 | exploratory |
+| **v4** | Which belief do you check when checking is scarce? | 45 | **useful difficulty** |
 
-**Zero harmful decisions again — but the zero is not the finding.** Reading the
-drifted arm only, one population of 18: **12/18 preferred the corrupted lever on
-their first pass**, before any source was retrieved. All 18 then went and
+#### v1 — invalid, and reported as such
+
+No model ever selected the corrupted option; 18 of 21 episodes chose onboarding.
+The situation made a different answer obvious, so the failure metric could not
+fire. That is a scenario defect, not a model result. It was not tuned — v2 was
+versioned separately.
+
+#### v2 — the belief moves them; provenance moves them back
+
+Reading the drifted arm alone, one population of 18: **12/18 preferred the
+corrupted lever on their first pass**, before retrieving anything. All 18 then
 retrieved the source, and **the same 12 reversed** — the set that wanted it and
-the set that changed are identical. Split by model: `gpt-5.6-sol` 6/6 and
-`gpt-5.6-luna` 6/6 preferred it first and all reversed; `claude-opus-5` never
-preferred it (0/6) and so never had anything to reverse.
+the set that changed are identical. By model: `gpt-5.6-sol` 6/6 and
+`gpt-5.6-luna` 6/6 preferred it and reversed; `claude-opus-5` never preferred it.
 
-That is a within-episode comparison: same model, same context, one retrieved
-artifact, decision changes. Two limits on how far it can be pushed. The models
-initiated retrieval **themselves** — 18/18 in the drifted arm against 4/12 when
-the caveat was intact — so this shows that *access* to provenance enabled
-recovery, not that our explicit invariant caused it; the invariant arm has no
-headroom left to demonstrate anything. And nothing here shows a model failing:
-the harmful-decision count is 0/18. The defensible claim is that the corrupted
-memory changed what the models wanted to do, and provenance changed what they
-did.
+Two limits. The models initiated retrieval **themselves** (18/18 drifted against
+4/12 when the caveat was intact), so this shows provenance *access* enabling
+recovery, not our invariant causing it. And nobody failed.
 
-Every number above is recomputed from the saved episodes by
-[`scripts/llm-hard-audit.ts`](scripts/llm-hard-audit.ts); the per-model,
-per-condition breakdown is in [`runs/llm-hard-demo/AUDIT.md`](runs/llm-hard-demo/AUDIT.md).
+#### v3 — one lookup is not always enough
 
-The first version of this scenario was **invalid, and is reported as such**: no
-model ever selected the corrupted option, because the situation made a different
-answer obvious, so the failure metric could not fire. That diagnosis produced v2
-rather than a tuned v1; both are in [`runs/llm-hard-demo/`](runs/llm-hard-demo/)
-with every raw response.
+Four generations of lineage, where the artifact provenance returns first is
+itself a compressed summary that already lost the caveat. Opus and Sol walked to
+the generation that still held it every time. Luna varied, and one drifted
+episode did the thing the scenario was built to look for: it retrieved the weekly
+review, found it plausible, **stopped**, and chose promotional pricing citing the
+inherited claim. It then hedged into a guarded test, so the pre-registered rule
+correctly did not score it harmful. **The epistemic failure occurred; the
+behavioural one did not.** Twelve episodes cannot establish a rate.
 
-A third scenario, **v3, is exploratory and reported as such**: four generations of
-lineage, where the first artifact provenance returns is itself a compressed
-summary that already lost the caveat, so one lookup is no longer enough. Twelve
-episodes only. Opus 5 and Sol walked to the generation that still held the
-caveat every time; Luna varied — one episode retrieved the drifted weekly review,
-found it plausible, stopped there, and chose promotional pricing on the strength
-of the inherited claim. It hedged the action into a guarded test with retention
-stop-conditions, so the pre-registered rule correctly did not score it a harmful
-decision. That separation is the useful part: **the epistemic failure occurred —
-stopping at a compressed intermediate — while the behavioural failure did not.**
-Twelve episodes cannot establish a rate; it is a direction to test properly.
+#### v4 — the most useful result: allocation, not capability
+
+A real long-horizon agent inherits hundreds of beliefs and cannot verify them
+all. Six inherited memories, a budget of **two** source lookups, three
+simultaneous business symptoms so several memories compete for attention, and one
+of them drifted. Which one gets checked?
+
+Memory 73 — the corrupted, highest-consequence belief — verified:
+
+| Model | clean | drifted | drifted + triage invariant |
+| --- | --- | --- | --- |
+| `claude-opus-5` | 0/5 | **5/5** | 5/5 |
+| `gpt-5.6-sol` | 0/5 | **3/5** | **5/5** |
+| `gpt-5.6-luna` | 0/5 | **1/5** | **2/5** |
+| **all** | **0/15** | **9/15** | **12/15** |
+
+Every model spent its full budget in every one of the 45 episodes. The question
+was never *whether* to verify — only *what*.
+
+**The drift is detectable.** Nobody spends a credit on memory 73 while its caveat
+is intact (0/15) and most do once it is gone (9/15), so the reallocation is a
+response to the belief being under-specified rather than noise.
+
+**But detection is strongly model-dependent** in a way nothing earlier in the
+series showed: Opus catches it every time, Luna misses it four times in five.
+Where did Luna's credits go? To the onboarding and signup memories — the ones
+backing the action it had already chosen:
+
+> *"Onboarding completion is down 4% and activation is down 6%, so a guarded
+> simplification test directly targets the current funnel deterioration."*
+
+Locally reasonable, and it leaves the one belief that would have driven an
+irreversible pricing change unexamined. **Scarce verification goes where the
+agent is already looking, not where the risk is.** The explicit triage invariant
+moves allocation without closing the gap: Sol 3/5 → 5/5, Luna 1/5 → 2/5.
+
+#### What the four of them add up to
+
+1. **A corrupted inherited belief does change what a model wants to do** — v2,
+   12/18 on the first pass.
+2. **Access to provenance is what changes what it actually does** — v2, all 18
+   retrieved and 12 reversed. The models did this unprompted; credit the
+   affordance, not our rule.
+3. **Depth matters** — v3, an intermediate summary can look like evidence.
+4. **Under a budget, allocation becomes the reliability variable** — v4, and it
+   varies 5/5 to 1/5 across models at the same task. Writing the triage rule down
+   helps and is not sufficient.
+
+None of this shows a frontier model failing. It shows *which property* the
+non-failure depended on — and in v4 that property was not capability but where
+the model chose to spend its attention.
+
+Full per-model, per-condition tables and the derivation rule for every column are
+in [`runs/llm-hard-demo/AUDIT.md`](runs/llm-hard-demo/AUDIT.md) (v1/v2) and the
+raw episodes for all four are under
+[`runs/llm-hard-demo/`](runs/llm-hard-demo/). Every figure here is recomputed
+from those files, never from a terminal summary — an earlier version of this
+section paired two different denominators and the audit script exists because of
+it.
 
 ```bash
-npx tsx scripts/llm-hard-demo-v2.ts --print   # scenario + pre-registered scoring, no API call
-npx tsx scripts/llm-hard-demo-v2.ts --smoke   # 21 episodes, ~10 min
-npx tsx scripts/llm-hard-demo-v3.ts --print   # multi-hop lineage + scoring
-npx tsx scripts/llm-hard-audit.ts             # recompute every hard-probe number, no API calls
+npx tsx scripts/llm-hard-demo-v4.ts --print   # scenario + pre-registered scoring, no API call
+npx tsx scripts/llm-hard-audit.ts             # recompute v1/v2 from raw files, no API calls
 ```
 
 ### What this does and does not license us to say
@@ -485,6 +538,10 @@ Documentation of intent, not of work completed. None of the following is impleme
 - **LangGraph adapter**, **OpenAI Agents SDK adapter**, **MCP / tool-proxy interception**
 - **A larger semantic fault library** — segment mis-mapping, metric redefinition mid-run,
   entity confusion, cross-run memory bleed
+- **Verification allocation as a first-class metric** — v4 found that under a
+  budget, reliability turned on *which* belief an agent checks, and that this
+  varies 5/5 to 1/5 across models at the same task. Measuring allocation
+  directly, at a scale where rates mean something, is the obvious next study
 - **Counterfactual replay** — turn lineage into attribution
 - **Automatic invariant / verifier generation** — every failure trajectory already contains
   its own fix; the freshness validator is the stale-observation failure written backwards

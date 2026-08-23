@@ -114,31 +114,25 @@ Objective drift, where the legitimate missing-guardrail branch is what fires.
 
 ## If asked: "does this happen with a real model?"
 
-Two probes, and the honest answer changed between them.
+Four pre-registered scenarios, 99 episodes, three models. **Zero harmful final
+decisions.** Say that first — it is the result, and a harness that could only
+produce failures would not be measuring anything.
 
-**The easy one was too easy.** Single-turn caveat omission, four models, N=10:
-0/40 contaminated. Report that plainly — a harness that could only produce
-failures would not be measuring anything.
+Then say what the non-failure depended on:
 
-**So we asked where it gets hard.** Two pre-registered scenarios — scenario and
-scoring committed before any model ran — where an agent inherits organizational
-memory 45 logical days later and one true caveat did not survive compaction.
-42 episodes, still zero harmful decisions. But in the drifted arm — one
-population, 18 episodes — **12 of 18 reached for the corrupted lever on their
-first pass**, before retrieving anything. All 18 then went and checked the
-source, and the same 12 reversed. Sol and Luna preferred it 6/6 each and both
-reversed every time; Opus 5 never preferred it.
+- **The corrupted belief does move them.** 12 of 18 reached for the wrong lever
+  on their first pass before retrieving anything.
+- **Provenance is what moved them back.** All 18 retrieved the source and the
+  same 12 reversed — unprompted, so credit the affordance, not our rule.
+- **v4 is the interesting one.** Give an agent six inherited memories and only
+  two verification credits, and the reliability question becomes *which belief
+  do you check*. Opus checked the corrupted one 5/5. Luna checked it 1/5 — it
+  spent both credits on the memories backing the action it had already picked.
+  Locally reasonable; it leaves the irreversible one unexamined.
 
-Same model, same context, one retrieved artifact, decision flips. Be careful
-with the credit: the models went and checked on their own, so this shows
-provenance *access* mattering, not our invariant working. And no model actually
-failed. The line that holds:
-
-> The corrupted memory changed what the models wanted to do. Provenance changed
-> what they did.
-
-Do **not** say "frontier models made catastrophic semantic failures." They did
-not — 0 harmful final decisions in 42 episodes.
+The line: **scarce verification goes where the agent is already looking, not
+where the risk is.** Writing an explicit triage rule helps and does not close
+the gap.
 
 ## If asked: "is the agent real, or scripted?"
 
