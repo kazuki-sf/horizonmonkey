@@ -274,7 +274,7 @@ for m in ABL3:
             pts.append((b, 100*ph, 100*(ph-lo), 100*(hi-ph)))
     lines.append((m, pts))
 fig = ["\\begin{tikzpicture}",
- "\\begin{axis}[width=10.5cm,height=6cm,xlabel={verification budget $k$},ylabel={corrupted memory verified (\\%)},xtick={1,2,3},xmin=0.8,xmax=3.2,ymin=-3,ymax=103,legend style={font=\\small,at={(1.03,0.5)},anchor=west,draw=none},grid=major]"]
+ "\\begin{axis}[width=10.5cm,height=6cm,xlabel={verification budget $k$},ylabel={corrupted memory verified (\\%)},xtick={1,2,3},xmin=0.8,xmax=3.2,ymin=-3,ymax=103,ytick={0,20,40,60,80,100},legend style={font=\\small,at={(1.03,0.5)},anchor=west,draw=none},grid=major]"]
 # Wilson 95% intervals; series dodged horizontally so the bars do not overlap
 for i, (name, pts) in enumerate(lines):
     dx = (i - 1) * 0.05
