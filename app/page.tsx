@@ -649,23 +649,35 @@ export default function Page() {
 
             <div className="panel">
               <h2>
-                Real-model probe<em>claude-opus-5 · N=10 per condition</em>
+                Real-model probes<em>opus 5 · gpt-5.6 sol / luna</em>
               </h2>
               <div className="probe">
-                <span className="k">Caveat omission, no defense</span>
-                <span className="v">0 / 10 contaminated</span>
-                <span className="k">Requested the missing data</span>
-                <span className="v">10 / 10</span>
-                <span className="k">Named the withheld metric</span>
-                <span className="v">10 / 10</span>
-                <span className="k">Control arm, nothing withheld</span>
-                <span className="v">1 / 10 asked</span>
-                <div className="verdict">ROBUST TO THIS PROBE — the mechanism did not replicate</div>
+                <span className="phd">Easy — single-turn caveat omission</span>
+                <span className="pn">4 models × N=10</span>
+                <span className="k">Contaminated durable memory</span>
+                <span className="v ok">0 / 40</span>
+                <span className="fine">Too easy to expose the failure, so we went looking for where it gets hard.</span>
+
+                <span className="phd">Hard — inherited memory drift, 2 pre-registered scenarios</span>
+                <span className="pn">42 episodes</span>
+                <span className="k">Leaned toward the drifted lesson first</span>
+                <span className="v bad">20 / 20</span>
+                <span className="k">Went and retrieved the source</span>
+                <span className="v ok">18 / 18</span>
+                <span className="k">Changed their decision after retrieving it</span>
+                <span className="v ok">12 / 18</span>
+                <span className="k">Ended in a consequential bad decision</span>
+                <span className="v ok">0 / 42</span>
+
+                <div className="verdict">
+                  The drifted belief moved them. Checking provenance is what stopped it.
+                </div>
                 <div className="fine">
-                  A separate single-decision probe, not a long-horizon run: one readout, full
-                  context, one answer. It does not show that a model on step 40 — retrieving a
-                  compressed memory an earlier version of itself wrote — behaves the same way. A
-                  harness that could only produce failures would not be measuring anything.
+                  Sol and Luna each leaned toward the discount on first pass 10/10 with the
+                  caveat missing; Opus 5 did once. Source retrieval ran 18/18 in the drifted
+                  arms against 4/12 when the caveat was intact. Same model, same context, one
+                  retrieved artifact, decision flips — a within-episode comparison, not a claim
+                  about models in general. Neither scenario was tuned after results were seen.
                 </div>
               </div>
             </div>

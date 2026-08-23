@@ -114,25 +114,27 @@ Objective drift, where the legitimate missing-guardrail branch is what fires.
 
 ## If asked: "does this happen with a real model?"
 
-We checked one mechanism against four models, and the honest answer is **no, not
-at this horizon.** Same isolated probe, byte-identical prompts, N=10 per
-condition: Claude Opus 5, GPT-5.6 Sol, Terra and Luna all wrote a contaminated
-durable belief **0/10** times. All forty faulted runs named the missing metric
-and asked for it. Even the cheapest tier caught it.
+Two probes, and the honest answer changed between them.
 
-The honest reading is not "these models are robust." It is **this probe is too
-easy** — one question, full context, one omission from a small table. Which is
-the argument for the harder test: caveats lost through repeated summarization,
-beliefs an earlier version of the model wrote, and a fault landing tens of steps
-before the decision it corrupts. That is the horizon the deterministic
-simulation reaches and the probe does not.
+**The easy one was too easy.** Single-turn caveat omission, four models, N=10:
+0/40 contaminated. Report that plainly — a harness that could only produce
+failures would not be measuring anything.
 
-That is a real negative result and we report it as one. What it does not do is
-validate the long-horizon claim, because it is not the same test: one
-well-framed question with the whole context in front of you is the easy version.
-Step 40 of a run, retrieving a compressed memory an earlier version of yourself
-wrote, is the hard version — and this probe does not reach it. That gap is the
-next experiment, not a result we already have.
+**So we asked where it gets hard.** Two pre-registered scenarios — scenario and
+scoring committed before any model ran — where an agent inherits organizational
+memory 45 logical days later and one true caveat did not survive compaction.
+42 episodes, still zero bad decisions. But: **GPT-5.6 Sol and Luna each leaned
+toward the discount on their first pass 10 out of 10 times.** The belief was
+doing exactly what we said it would. What stopped it was that every drifted
+episode went and retrieved the source — 18/18, versus 4/12 when the caveat was
+intact — and that retrieval changed the decision 12 times out of 18.
+
+Same model, same context, one retrieved artifact, decision flips. The mechanism
+reproduces. Provenance is what closes it. That is the line:
+
+> We didn't give the agent a false fact. We let a true caveat disappear across
+> generations of memory — and two of three models reached for the wrong lever
+> before they checked where the lesson came from.
 
 ## If asked: "is the agent real, or scripted?"
 

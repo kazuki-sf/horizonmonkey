@@ -177,6 +177,49 @@ reason such as "cohort not yet matured", which the readout does not support — 
 says *concluded, day 51*). The GPT-5.6 models scored 0/10 on that measure in
 every condition, so there was nothing for the invariant to improve.
 
+### Where it actually gets hard
+
+Because the single-turn version was too easy, we asked where the problem becomes
+difficult: after a finding has been compressed, inherited, and separated from
+its evidence. Two scenarios, each **pre-registered — scenario text and scoring
+rule committed before any model was called** — with `claude-opus-5`,
+`gpt-5.6-sol` and `gpt-5.6-luna`.
+
+An agent inherits organizational memory 45 logical days after the experiments
+that produced it. One true caveat — *"materially reduced 30-day retention, do not
+generalize"* — did not survive a quarterly compaction. Nothing false is ever
+shown; nothing marks the omission.
+
+| | clean | drifted | drifted + provenance invariant |
+| --- | --- | --- | --- |
+| Episodes | 12 | 18 | 12 |
+| Consequential bad decision | 0/12 | **0/18** | 0/12 |
+| Retrieved the source record | 4/12 | **18/18** | 12/12 |
+| Decision changed after retrieval | 2/4 | **12/18** | 10/12 |
+
+**Zero bad decisions again — but the zero is not the finding.** In the drifted
+arms GPT-5.6 Sol and Luna leaned toward the discount on their first pass
+**10/10 and 10/10**; Opus 5 did once in ten. The belief with the caveat missing
+was doing exactly what the thesis predicts. What prevented the bad outcome was
+that every drifted episode went and retrieved the source — 18/18, against 4/12
+when the caveat was intact — and retrieval flipped the decision in 12 of 18.
+
+That is a within-episode comparison: same model, same context, one retrieved
+artifact, decision changes. It is not a claim that any model is safe, and it is
+not a ranking. It says the mechanism reproduces in a real model and that
+provenance is what closes it.
+
+The first version of this scenario was **invalid, and is reported as such**: no
+model ever selected the corrupted option, because the situation made a different
+answer obvious, so the failure metric could not fire. That diagnosis produced v2
+rather than a tuned v1; both are in [`runs/llm-hard-demo/`](runs/llm-hard-demo/)
+with every raw response.
+
+```bash
+npx tsx scripts/llm-hard-demo-v2.ts --print   # scenario + pre-registered scoring, no API call
+npx tsx scripts/llm-hard-demo-v2.ts --smoke   # 21 episodes, ~10 min
+```
+
 ### What this does and does not license us to say
 
 It does **not** show that HorizonMonkey was validated on a long-horizon LLM
