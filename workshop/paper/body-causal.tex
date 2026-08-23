@@ -1,0 +1,108 @@
+\section{Study 2: the allocation causes the later decision}\label{sec:causal}
+
+Study 1 shows where the budget goes. It does not show that this matters. The
+natural test --- let the situation shift after the budget is spent, then see
+whether episodes that recovered the caveat behave differently --- is
+observational: verification is chosen by the model, so the two groups differ in
+whatever made the model choose.
+
+An earlier two-phase experiment ran exactly that comparison and reported a large
+split. Auditing its implementation we found two paths that the design left open
+and the reporting did not separate. First, the triage arm's system prompt was
+constructed once and reused for the later call, so the randomised instruction
+was still in context when the second decision was made and could act on it
+directly. Second, the phase-1 conversation was carried forward, so the model saw
+its own earlier reasoning --- which in the drifted arm frequently argued
+explicitly against the corrupted direction. ``Verified'' and ``unverified''
+episodes therefore differed in what the model had already committed to in
+writing, not only in what evidence it held.
+
+We close both by construction, pre-registering two experiments before any call.
+
+\subsection{A randomised-instrument replay}
+
+For each of the \ThreeAN{} episodes of the earlier experiment we replay
+\emph{only} the second decision, as a fresh session: the triage sentence is
+absent from every arm, no conversation history is carried, the memory block and
+its per-episode order are reproduced, and the only thing that differs is a
+\textsc{recovered} block holding source records for exactly the memories that
+episode's budget was actually spent on. The situation text is byte-identical
+across arms.
+
+Triage assignment was randomised upstream and moves recovery hard. In the replay
+it cannot reach the outcome by any route except through what was carried
+forward, because the session is otherwise identical across arms. This is a
+randomised encouragement design in which the exclusion restriction is true by
+construction rather than assumed.
+
+It replicates. The corrupted-direction rate is \ThreeATrK/\ThreeATrN{}
+(\ThreeATrPct\%) under triage against \ThreeADrK/\ThreeADrN{} (\ThreeADrPct\%)
+without it (CMH stratified by model, $p = \ThreeACMH$). And the exclusion
+restriction can be checked rather than argued: matched on what phase~1
+recovered, the two arms are indistinguishable in both strata ---
+\ThreeARecDrK/\ThreeARecDrN{} versus \ThreeARecTrK/\ThreeARecTrN{} among
+episodes that recovered the caveat ($p = \ThreeARecCMH$), and
+\ThreeAUnrecDrK/\ThreeAUnrecDrN{} versus \ThreeAUnrecTrK/\ThreeAUnrecTrN{} among
+those that did not ($p = \ThreeAUnrecCMH$). With the instruction removed from
+the room, arms holding the same evidence behave the same way.
+
+The Wald estimate of the effect of recovering the corrupted memory's source is
+$\IVEst$ (95\% CI $[\IVLo, \IVHi]$ by stratified bootstrap over models): close
+to complete compliance, an agent that recovers the caveat essentially does not
+walk into the corrupted direction.
+
+\paragraph{The original design was conservative, not inflated.} Removing the
+carried-forward conversation \emph{raises} the corrupted-direction rate among
+episodes that never recovered the caveat, from 79\% in the original to
+\ThreeAUnrecDrPctText\% here. The model's own earlier prose had been suppressing
+the choice, and the original design credited that suppression to provenance. The
+confound worked against the reported effect.
+
+\subsection{Randomising the provenance itself}
+
+The replay still lets the model choose what it recovered. So we also assign it.
+In \ThreeBN{} fresh single-call episodes the memory block is the drifted lineage
+in both arms, and two source records are carried forward: in \textsc{carry-target}
+one of them is the corrupted memory's, in \textsc{carry-other} neither is. Both
+arms carry exactly two records; only their identity differs, and it is assigned
+by seeded PRNG.
+
+\begin{table}[t]
+\centering\small
+\caption{Study 2b. Corrupted-direction rate when the provenance carried into the
+later decision is randomised rather than chosen. Both arms carry two source
+records; only whether one of them is the corrupted memory's differs.}
+\label{tab:carry}
+\begin{tabular}{lrr}
+\toprule
+& corrupted memory's source carried & not carried \\
+\midrule
+Opus 5    & 0/25 & 14/25 \\
+Sonnet 5  & 2/25 & 25/25 \\
+Haiku 4.5 & 0/25 & 25/25 \\
+Sol       & 0/25 & 25/25 \\
+Terra     & 1/25 & 25/25 \\
+Luna      & 0/25 & 25/25 \\
+\midrule
+pooled & \ThreeBTgtK/\ThreeBTgtN{} (\ThreeBTgtPct\%) & \ThreeBOthK/\ThreeBOthN{} (\ThreeBOthPct\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:carry} gives the result: \ThreeBTgtK/\ThreeBTgtN{} against
+\ThreeBOthK/\ThreeBOthN{}, a difference of \ThreeBDiff{} percentage points
+(CMH $\chi^2 = \ThreeBChi$, $p \ThreeBCMH$), in the same direction in
+\ThreeBAllModels{} of six models, with five of six choosing the corrupted
+direction in every single episode where its provenance was absent.
+
+Two independent identification strategies --- an instrument in 2a, full
+randomisation in 2b --- put the effect at the same place, near $-91$ percentage
+points. What the budget happened to recover is not a marker of some other
+difference between episodes. It is the thing that decides.
+
+\paragraph{What this does and does not establish.} It establishes that
+\emph{holding} the recovered caveat changes the later decision. It does not
+establish that models allocate budget \emph{in order to} secure future evidence;
+Study 1 says the opposite, that they allocate toward the present plan. The
+causal chain we have closed is allocation $\rightarrow$ what is in context later
+$\rightarrow$ behaviour, not any claim about foresight.

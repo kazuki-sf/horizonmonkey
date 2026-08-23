@@ -1,0 +1,81 @@
+\section{Discussion: memory systems need a verification scheduler}
+
+The results describe a control problem that current memory architectures do not
+expose. A retrieval layer answers \emph{which records are relevant to what the
+agent is doing}. Nothing answers \emph{which records are worth spending scarce
+provenance checks on}. In our environment those two rankings are close to
+opposites: the belief most costly if wrong is the one outside the current plan,
+and that is exactly the one the budget does not reach.
+
+Making the second ranking explicit needs metadata the first does not: how many
+consolidation generations a record has passed through, when its provenance was
+last actually followed, how broad its scope claim is relative to the evidence
+behind it, and which future contexts could make it load-bearing. Study 4 gives a
+concrete signal for the third: a record that retains a number while losing its
+scope or its prohibition has drifted in the direction that matters, and the drift
+is detectable by comparing generations, which a consolidation pipeline is in a
+position to do and an agent reading the final summary is not.
+
+We are wary of the term \emph{verification debt}, but the accounting it suggests
+is the useful part. A durable belief that survives many consolidations without
+its provenance ever being followed accumulates risk that no single session sees,
+because each session rationally spends its budget on its own plan. Study 1 shows
+that behaviour is not a defect of any one model --- it is what every model we
+tested does, and it is locally correct. The fix is therefore unlikely to be a
+better-behaved agent. It is a scheduler outside the agent that can spend
+verification against the store's accumulated exposure rather than against today's
+decision.
+
+\paragraph{Steering works, partially.} One system-prompt sentence naming no
+memory and no direction moves allocation substantially (Table~\ref{tab:unified},
+odds ratio 13.2), and Study 2a shows that this reaches behaviour one decision
+later through what it caused the agent to recover. But it does not equalise
+models, and in our replay the model with the weakest allocation still walks into
+the corrupted direction a quarter of the time under the instruction. Prompt-level
+triage is worth writing and is not a substitute for scheduling.
+
+\section{Limitations}
+
+\textbf{One scenario.} Every episode instantiates the same synthetic
+growth-agent situation with six memories and five actions. We deliberately did
+not add a second domain: built in the time available it would have been a
+paraphrase of the first, and generality claimed from two structurally identical
+scenarios is worse than generality not claimed. Domain replication and larger
+memory pools are the obvious next step and we have not taken it.
+
+\textbf{Small memory pool, perfect archive.} Six records, explicit ids, and a
+provenance store that always answers correctly and instantly. Real stores are
+larger, slower, sometimes missing, and sometimes themselves stale. We expect all
+of these to sharpen the allocation problem, but we have not shown it.
+
+\textbf{Study 1 is a re-analysis.} Its episodes were collected earlier under
+their own pre-registration. The confounds we identified in its clean arm
+(Study 3) and in its two-phase follow-up (Study 2) are why Studies 2--4 exist;
+where Study 1's reported interpretation and our new evidence conflict, we have
+said so in the section concerned rather than restating the earlier reading.
+
+\textbf{Causal scope.} Studies 2a and 2b identify the effect of \emph{holding}
+recovered provenance on the next decision. Neither identifies why models
+allocate as they do, and nothing here tests whether allocation is stable across
+tasks or sessions --- so we avoid calling it a trait.
+
+\textbf{Behaviour, not harm.} We measure which direction the agent chooses and
+at what scale. Under a strict pre-registered harm rule requiring an unhedged,
+unverified, corrupted-evidence rollout, no episode in this work or its
+predecessor qualifies: models hedge verbally while still choosing the direction.
+That is itself a warning about self-reported uncertainty as a safety metric, and
+it means our outcome is exposure, not damage.
+
+\section{Conclusion}
+
+Provenance links do not make an inherited memory store safe; following them
+does, and following is budgeted. We find that agents spend that budget on the
+beliefs behind the plan they already have --- with no counterexample in
+\ExpOneN{} episodes --- and that what the budget happens to recover causally
+determines what they do when the situation later shifts, by roughly ninety
+percentage points under two independent randomised designs. We also find that a
+silently deleted caveat attracts less scrutiny than an irrelevant hedge, and
+that real consolidation does not delete caveats so much as strip their scope and
+their normative force while keeping the numbers that make them look
+well-evidenced. Retrieval relevance and verification priority are different
+rankings. Memory systems currently compute only the first.
