@@ -513,3 +513,10 @@ Every call succeeded.
 `hackathon-demo` tags the submitted state. Behavioural equivalence across later refactors
 is verified with `scripts/snapshot.ts`, which dumps all four faults across all five
 defense combinations as key-sorted JSON for byte comparison.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE). The saved model responses under `runs/` are
+research artifacts and are published as-is; none were edited after the fact.
