@@ -268,13 +268,20 @@ for m in ABL3:
     pts = []
     for b in [1,2,3]:
         g2 = sel(model=m, cond="drifted", target="memory_73", budget=b)
-        if g2: pts.append((b, 100*sum(e["vt"] for e in g2)/len(g2)))
+        if g2:
+            k2 = sum(e["vt"] for e in g2)
+            ph, lo, hi = wilson(k2, len(g2))
+            pts.append((b, 100*ph, 100*(ph-lo), 100*(hi-ph)))
     lines.append((m, pts))
 fig = ["\\begin{tikzpicture}",
- "\\begin{axis}[width=9cm,height=6cm,xlabel={verification budget $k$},ylabel={corrupted memory verified (\\%)},xtick={1,2,3},ymin=0,ymax=100,legend pos=south east,legend style={font=\\small},grid=major]"]
-for name, pts in lines:
-    coords = " ".join(f"({b},{p:.1f})" for b, p in pts)
-    fig.append(f"\\addplot+[thick,mark=*] coordinates {{{coords}}};")
+ "\\begin{axis}[width=10.5cm,height=6cm,xlabel={verification budget $k$},ylabel={corrupted memory verified (\\%)},xtick={1,2,3},xmin=0.8,xmax=3.2,ymin=-3,ymax=103,legend style={font=\\small,at={(1.03,0.5)},anchor=west,draw=none},grid=major]"]
+# Wilson 95% intervals; series dodged horizontally so the bars do not overlap
+for i, (name, pts) in enumerate(lines):
+    dx = (i - 1) * 0.05
+    coords = " ".join(f"({b+dx},{p:.1f}) -= (0,{lo:.1f}) += (0,{hi:.1f})" for b, p, lo, hi in pts)
+    fig.append("\\addplot+[thick,mark=*,error bars/.cd,y dir=both,y explicit,"
+               "error bar style={line width=0.5pt},error mark options={rotate=90,mark size=2pt}]"
+               f" coordinates {{{coords}}};")
     label = DISPLAY[name]
     fig.append(f"\\addlegendentry{{{label}}}")
 fig += ["\\end{axis}", "\\end{tikzpicture}"]
