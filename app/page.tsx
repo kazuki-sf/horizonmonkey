@@ -49,13 +49,17 @@ const NATURAL_DEFENSE: Record<FaultType, DefenseId> = {
 /** Hold ticks are steps where the agent did nothing but wait for traffic. */
 const isNoise = (e: TraceEvent) => e.type === "evaluation";
 
-/** Per-event dwell time. The fault gets a beat; routine work goes past quickly. */
-function dwell(e: TraceEvent): number {
-  if (e.isFaultOrigin) return 1500;
-  if (e.type === "fault_detection" || e.type === "recovery") return 900;
-  if (e.faultIds.length > 0) return e.type === "action" || e.type === "memory_write" ? 480 : 300;
-  if (e.type === "action") return 260;
-  return 110;
+/**
+ * Pacing. Routine work is instrumentation, not narrative — it goes past almost
+ * instantly. The handful of events that carry the story hold long enough to be
+ * read aloud. Earlier this dwelt on everything, which turned the demo into a
+ * wall of scrolling text with nowhere to look.
+ */
+function dwell(e: TraceEvent, isBeat: boolean): number {
+  if (e.isFaultOrigin) return 2600;
+  if (isBeat) return e.type === "action" ? 2200 : 1800;
+  if (e.type === "fault_detection" || e.type === "recovery") return 1600;
+  return 60;
 }
 
 function glyph(e: TraceEvent) {
@@ -296,6 +300,8 @@ export default function Page() {
   const [manual, setManual] = useState<Record<number, boolean>>({});
   /** "compare" shows the two futures side by side instead of one timeline. */
   const [mode, setMode] = useState<"single" | "compare">("single");
+  /** "story" is six beats in large type; "trace" is the full instrumented log. */
+  const [view, setView] = useState<"story" | "trace">("story");
 
   /** Which arm of the comparison is on screen. */
   const arm: "baseline" | "chaos" | "defended" =
@@ -333,7 +339,7 @@ export default function Page() {
       return;
     }
     const next = cursor + 1;
-    timer.current = setTimeout(() => setCursor(next), dwell(events[next]) / speed);
+    timer.current = setTimeout(() => setCursor(next), dwell(events[next], beatIds.has(events[next].id)) / speed);
     return stop;
   }, [playing, cursor, events, speed]);
 
@@ -414,6 +420,12 @@ export default function Page() {
     injected: seen.some((e) => e.isFaultOrigin),
   };
 
+  const allBeats = useMemo(() => (run ? storyBeats(events) : []), [run, events]);
+  const beatIds = useMemo(() => new Set(allBeats.map((b) => b.event.id)), [allBeats]);
+  const seenBeats = useMemo(
+    () => allBeats.filter((b) => events.indexOf(b.event) <= cursor),
+    [allBeats, events, cursor]
+  );
   const groups = useMemo(() => groupSteps(seen), [seen]);
   const currentStep = seen.at(-1)?.step ?? -1;
 
@@ -562,8 +574,14 @@ export default function Page() {
             <Counterfactual data={data!} />
           ) : (
           <div className="stage">
+            {view === "story" ? (
+              <Story beats={allBeats} seen={seenBeats} total={events.length} cursor={cursor} onToggle={() => setView("trace")} />
+            ) : (
             <div className="term">
               <div className="term-bar">
+                <button className="mini-btn" style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => setView("story")}>
+                  ← story
+                </button>
                 <span className={`dot${playing ? " live" : ""}`} />
                 live agent trace · {arm}
                 {(() => {
@@ -645,6 +663,7 @@ export default function Page() {
                 })}
               </div>
             </div>
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div className="health green">
@@ -907,6 +926,54 @@ function Counterfactual({ data }: { data: Comparison }) {
       <div className="cf-foot">
         Control run with no fault scores {data.baseline.summary.goalFidelity}. Both arms above ran
         the same deterministic agent against the same world.
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The focal surface. One beat at a time, large enough to read from the back of
+ * a room, with the beats behind it kept visible as a short rail so the audience
+ * can see the shape of the story without scrolling anything.
+ */
+function Story({
+  beats, seen, total, cursor, onToggle,
+}: { beats: Beat[]; seen: Beat[]; total: number; cursor: number; onToggle: () => void }) {
+  const now = seen[seen.length - 1];
+  return (
+    <div className="story">
+      <div className="story-bar">
+        <span>the story · {seen.length}/{beats.length} beats</span>
+        <button className="mini-btn" style={{ padding: "3px 9px", fontSize: 10 }} onClick={onToggle}>
+          show full trace ({total} events) →
+        </button>
+      </div>
+
+      <div className="story-now">
+        {now ? (
+          <>
+            <div className={`sn-badge k-${now.kind}`}>
+              {BEAT_GLYPH[now.kind]} step {String(now.event.step).padStart(2, "0")}
+            </div>
+            <div className={`sn-head k-${now.kind}`}>{now.headline}</div>
+            <div className="sn-raw">{now.event.summary}</div>
+          </>
+        ) : (
+          <div className="sn-wait">{cursor < 0 ? "ready" : "running…"}</div>
+        )}
+      </div>
+
+      <div className="story-rail">
+        {beats.map((b, i) => {
+          const reached = i < seen.length;
+          const current = i === seen.length - 1;
+          return (
+            <div key={b.event.id} className={`rail-item k-${b.kind}${reached ? " on" : ""}${current ? " cur" : ""}`}>
+              <span className="rg">{BEAT_GLYPH[b.kind]}</span>
+              <span className="rt">{b.headline}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
