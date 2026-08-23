@@ -83,6 +83,20 @@ mac("ThreeBTgtK",kt); mac("ThreeBTgtN",nt); mac("ThreeBOthK",kc); mac("ThreeBOth
 mac("ThreeBTgtPct", f"{100*kt/nt:.0f}" if nt else "0"); mac("ThreeBOthPct", f"{100*kc/nc:.0f}" if nc else "0")
 mac("ThreeBDiff", f"{100*(kc/nc - kt/nt):.0f}" if nt and nc else "0")
 mac("ThreeBCMH", cmhtex(st)); mac("ThreeBChi", f"{cmh_chi2(st):.0f}" if st else "0")
+# severity, not just direction: non-guarded choices under randomisation
+ngc = lambda r: sum(1 for e in r if e["scores"].get("p2_nonguarded_pricing"))
+stn = []
+for m in MODELS:
+    t = [e for e in B if e["model"]==m and e["arm"]=="carry-target"]
+    o = [e for e in B if e["model"]==m and e["arm"]=="carry-other"]
+    if t and o: stn.append((ngc(t), len(t), ngc(o), len(o)))
+tt = [e for e in B if e["arm"]=="carry-target"]; oo = [e for e in B if e["arm"]=="carry-other"]
+mac("ThreeBNGTgt", f"{ngc(tt)}/{len(tt)}"); mac("ThreeBNGOth", f"{ngc(oo)}/{len(oo)}")
+if stn: mac("ThreeBNGCMH", cmhtex(stn)); mac("ThreeBNGChi", f"{cmh_chi2(stn):.0f}")
+mac("ThreeBNGHedged", str(sum(1 for e in B if e["scores"].get("p2_nonguarded_pricing") and not e["scores"]["p2_uncertainty"])))
+A_ng = sum(1 for e in A if e["scores"].get("p2_nonguarded_pricing"))
+mac("ThreeANonGuarded", f"{A_ng}/{len(A)}")
+
 mac("ThreeBAllModels", str(sum(1 for m in MODELS
     if cell([e for e in B if e["model"]==m and e["arm"]=="carry-target"])[0]
      < cell([e for e in B if e["model"]==m and e["arm"]=="carry-other"])[0])))
@@ -161,6 +175,17 @@ if S:
             t += 1; kp += any(w in body for w in PROH); kn += any(w in body for w in NUM)
         mac(f"FiveNum{tag}", f"{kn}/{t}"); mac(f"FiveProh{tag}", f"{kp}/{t}")
     mac("FiveGenerations", "6")
+    # did consolidation ever strip memory_73 down to a purely positive body,
+    # i.e. reproduce the corruption Experiments 1-4 install by hand?
+    NEGW = ["retention","churn","renewal","ret ","-12","12%","12pp","damage","hurt",
+            "risk","unsustain","not sustain","guardrail","selectively","tactically",
+            "short-term","judge at"]
+    pure = tot = 0
+    for ch in D:
+        for g in ch["generations"]:
+            b = g.get("memory_73","").lower(); tot += 1
+            if not any(w in b for w in NEGW): pure += 1
+    mac("FivePurelyPositive", f"{pure}/{tot}")
     per = []
     for m in MODELS:
         r = [s_ for s_ in S if s_["memory"]=="memory_73" and s_["model"]==m]
@@ -255,8 +280,12 @@ mac("BodyRatio", f"{lens['cleanT']/lens['oMean']:.2f}")
 bad = [k for k in M if not k.isalpha()]
 if bad:
     raise SystemExit(f"invalid LaTeX macro names (control words must be letters only): {bad}")
-with open("workshop/paper/macros.tex","w") as f:
-    for k,val in M.items(): f.write(f"\\newcommand{{\\{k}}}{{{val}}}\n")
-print(f"wrote {len(M)} macros to workshop/paper/macros.tex")
+body = "".join(f"\\newcommand{{\\{k}}}{{{val}}}\n" for k,val in M.items())
+open("workshop/paper/macros.tex","w").write(body)
+# the arXiv manuscript reports the same experiments, so it reads the same numbers
+os.makedirs("paper/figures", exist_ok=True)
+open("paper/figures/macros3.tex","w").write(body)
+open("paper/tab-carry.tex","w").write(open("workshop/paper/tab-carry.tex").read())
+print(f"wrote {len(M)} macros to workshop/paper/macros.tex and paper/figures/macros3.tex")
 for k in ("ExpOneN","AlignedK","AlignedN","ThreeAN","ThreeBN","FourN","FiveChains","FiveScored"):
     print(f"  {k} = {M.get(k)}")

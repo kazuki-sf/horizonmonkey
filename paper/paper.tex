@@ -10,6 +10,7 @@
 \captionsetup{font=small,labelfont=bf}
 \input{figures/macros}
 \IfFileExists{figures/macros2.tex}{\input{figures/macros2}}{}
+\IfFileExists{figures/macros3.tex}{\input{figures/macros3}}{}
 
 \title{Verification Goes Where the Agent Is Already Looking:\\
 Intent-Aligned Triage of Inherited Memory Under Budget}
@@ -41,21 +42,30 @@ reallocation varies sharply across models at the same task, from near-always to
 near-never. Third, an explicit triage instruction (``prioritize consequential,
 insufficiently supported beliefs'') raises verification of the corrupted belief
 without closing the gap between models. A second pre-registered experiment
-then makes the unexamined belief load-bearing: the situation shifts
-mid-session, after the budget is spent, so the corrupted lesson comes under
-pressure. Our pre-registered strict failure metrics returned zero --- every
+makes the unexamined belief load-bearing: the situation shifts mid-session,
+after the budget is spent. Its strict failure metrics returned zero --- every
 model that walked into the corrupted direction also self-reported hedges, and
-such flags saturate --- but the exploratory behavioral split is stark and
-consistent across all six models: episodes whose earlier budget had recovered
-the lost caveat chose the corrupted direction 6\% of the time; episodes whose
-budget had missed it, 79\%; and the verification-steering instruction,
-randomized across arms, halved the behavioral rate one decision later. Asked
-separately to rate each memory's evidential support, the strongest verifiers
-do not describe the corrupted memory as weak, and the model that describes it
-as weak barely verifies it: stated evidence judgments and verification
-allocation dissociate in both directions. Across all 1470 pre-registered
-episodes, no decision meets the strict harmful rule; the exposure these
-measurements document is epistemic and allocational. All scenarios, scoring
+such flags saturate --- and its behavioral contrast is observational. Three
+further pre-registered experiments then close the gaps we found by auditing
+that design. Replaying the later decision with the steering instruction and the
+conversation history removed, and randomizing which source records are carried
+into it, both put the effect of holding the recovered caveat near
+$-\ThreeBDiff$ percentage points: \ThreeBOthK/\ThreeBOthN{} of episodes chose
+the corrupted direction without that provenance in context against
+\ThreeBTgtK/\ThreeBTgtN{} with it. Matched-qualifier controls then show the
+mechanism is not omission-detection: with body length and surface hedging
+controlled, the true caveat \emph{suppresses} verification, and a memory
+carrying an irrelevant hedge is checked more often than one whose material
+caveat was silently deleted --- silence is stealthier than qualification.
+Finally we test the premise this threat model rests on by running a real
+consolidation chain, and it only half holds: over \FiveGenerations{}
+generations, quantified negative outcomes mostly survive (\FiveNegResDPct\% of
+chains) while scope restrictions (\FiveScopeResDPct\%) and normative
+prohibitions erode. The randomization also reaches severity, not only
+direction: unguarded moves into the corrupted direction occur in
+\ThreeBNGOth{} episodes without the provenance and \ThreeBNGTgt{} with it
+($p = \ThreeBNGCMH$), while the five-clause strict harm rule still returns
+zero everywhere because self-reported hedging saturates. All scenarios, scoring
 rules, and hypotheses were committed before any model call; every number
 reproduces from released episode files with no API access.
 \end{abstract}
@@ -65,13 +75,21 @@ reproduces from released episode files with no API access.
 An agent that runs for weeks does not act from raw evidence. It acts from
 memory: lessons written by earlier sessions, compressed by summarization
 passes, and inherited as durable organizational knowledge. Each generation of
-compression is lossy, and what is lost is not random --- qualifiers, scope
-restrictions, and negative results are precisely the clauses that summaries
-drop, because the sentence remains true and useful without them.
-``Discounting lifted signups 31\% and revenue 18\% \emph{but destroyed
-retention}'' compresses naturally to ``discounting lifted signups 31\% and
-revenue 18\%.'' Nothing false has been written. A constraint has silently
-stopped being carried forward.
+compression is lossy, and the usual worry is that what it drops is exactly
+what constrains action: ``Discounting lifted signups 31\% and revenue 18\%
+\emph{but destroyed retention}'' compressing to ``discounting lifted signups
+31\% and revenue 18\%.'' Nothing false has been written; a constraint has
+silently stopped being carried forward.
+
+We tested that premise rather than assuming it, and it is only half right
+(\S\ref{sec:drift}). Running a real consolidation chain for
+\FiveGenerations{} generations, the quantified negative result is close to the
+last thing compression discards --- still stated in \FiveNegResDPct\% of
+chains when lessons are cut to seventy characters. What erodes is the
+\emph{scope} of a finding (\FiveScopeResDPct\% survive) and its normative
+force: the sentence saying not to do it anyway. The realistic drift operator is
+loss of the constraint while the supporting number survives, which is worse than
+it sounds, because a lesson that keeps its numbers looks well-evidenced.
 
 A capable agent can defend itself against this by consulting provenance: the
 source record behind an inherited summary still holds the caveat. Prior work
@@ -107,7 +125,8 @@ reversible if its hidden caveat is real, but not the direction the agent is
 likely to pick. A verification policy that follows risk should check it. A
 verification policy that follows intent will check something else.
 
-Our findings, pre-registered as five hypotheses before any model call:
+Our findings, from seventeen hypotheses pre-registered across five experiments,
+each committed before that experiment's first model call:
 
 \begin{itemize}
 \item \textbf{Allocation follows intent.} Across all drifted episodes at
@@ -145,6 +164,27 @@ drift (\XUngDriftK{} vs.\ \XUngCleanK{} clean).
 shows the strongest verifiers do not rate the corrupted memory as weak, while
 the model that rates it weakest barely verifies it --- so neither
 introspective report nor allocation is a proxy for the other.
+\item \textbf{The allocation is causally load-bearing.} Randomizing which
+source records are carried into the later decision --- so nothing is
+self-selected --- moves the corrupted-direction rate from \ThreeBOthK/\ThreeBOthN{}
+to \ThreeBTgtK/\ThreeBTgtN{}, and removes unguarded commitment to it entirely
+(\ThreeBNGOth{} against \ThreeBNGTgt). Replaying the decision with the steering
+instruction and the conversation history stripped out gives the same estimate
+from an instrument (\S\ref{sec:causal}).
+
+\item \textbf{The mechanism is not omission detection.} With body length and
+surface hedging matched, the true caveat \emph{suppresses} verification
+(\FourNegPct\%), and a memory hedging about something irrelevant
+(\FourNeutPct\%) is checked more often than one whose material caveat was
+deleted (\FourDriftPct\%). Silence is stealthier than qualification
+(\S\ref{sec:qualifier}).
+
+\item \textbf{Benign compression does not produce this corruption.} Over
+\FiveGenerations{} generations of real consolidation, quantified negatives
+mostly survive (\FiveNegResDPct\%) while scope restrictions
+(\FiveScopeResDPct\%) and prohibitions erode. The realistic drift keeps the
+number and loses the limit (\S\ref{sec:drift}).
+
 \item \textbf{No strict behavioral failures.} Under the pre-registered
 harmful-decision rule, \TotalHarmful{} episodes of \TotalEpisodes{} in
 Experiment 1 and 0 of 450 in Experiment 2 end badly. The exposure is
@@ -226,10 +266,12 @@ Memory & Inherited lesson (drifted arm, pricing-target world) \\
 \bottomrule
 \end{tabular}
 \caption{The six inherited memories as presented in the drifted arm
-(123--132 characters each; order randomized per episode). In the clean arm
-\texttt{memory\_73} additionally carries its true caveat: ``However, it
-materially reduced 30-day retention; do not generalize it as a growth
-strategy.'' The swapped-target world applies the same construction to
+(\BodyMin--\BodyMax{} characters each; order randomized per episode). In the
+clean arm \texttt{memory\_73} additionally carries its true caveat: ``However,
+it materially reduced 30-day retention; do not generalize it as a growth
+strategy.'' That takes its body to \BodyCleanTarget{} characters,
+\BodyRatio$\times$ the others, and makes it the only \emph{However} clause in
+the set; \S\ref{sec:qualifier} controls for both. The swapped-target world applies the same construction to
 \texttt{memory\_86} instead.}
 \label{tab:memories}
 \end{table}
@@ -280,6 +322,10 @@ Wilson 95\% intervals; pairwise contrasts use two-sided Fisher exact tests.
 
 \input{phase2_body}
 
+\input{exp3_body}
+
+\input{exp45_body}
+
 \section{Limitations}
 \input{limitations_body}
 
@@ -292,19 +338,37 @@ already intends to act. On a task where nearly every episode spent its full
 budget (\FullBudgetK{} of \TotalEpisodes{} in Experiment 1), reliability
 differences came almost entirely from \emph{direction} --- whether scarce
 attention reached the belief that was silently wrong, or only the beliefs
-behind the plan the agent had already formed. That allocation is locally
-rational and, our second experiment suggests, exactly backwards once the
-context shifts: when the corrupted lesson later came under pressure with the
-budget spent, what the earlier lookups happened to recover was the difference
-between walking into the corrupted direction 6\% of the time and 79\% of the
-time --- in every model we tested --- and a one-sentence rule that steers
-\emph{verification} halved that \emph{behavioral} rate one decision later.
-Meanwhile stated evidence judgments tracked neither: the strongest verifiers
-did not call the corrupted memory weak, and the model that called it weakest
-barely checked it. Verification allocation is its own faculty --- distinct
-from detection, from stated judgment, and from capability --- and making it
-visible, steerable, and eventually risk-weighted rather than intent-weighted
-is a concrete, testable target for agent-memory systems.
+behind the plan the agent had already formed. That allocation is locally rational
+and costly once the context shifts, and Experiments 3--5 let us say which parts
+of that we have established.
+
+Randomizing what provenance is carried into a later decision moves the
+corrupted-direction rate by \ThreeBDiff{} points and removes every unguarded
+commitment to it; an instrument built from the randomized triage arm agrees
+within a point. That much is causal. What produces the allocation in the first
+place is not: intent and verification are named in the same response, and the
+\AlignedK/\AlignedN{} separation is consistent with a policy and with a model
+narrating the plan it is about to state.
+
+The mechanism is narrower than we first read it. With body length and surface
+hedging controlled, the true caveat \emph{suppresses} verification --- a record
+whose constraint is written down needs no lookup --- and a memory hedging about
+something irrelevant is checked more often than one whose material caveat was
+deleted. So the drifted record is not conspicuous to the agent; it is
+inconspicuous, which is worse.
+
+And the compression story we opened with is only half true. Running the
+consolidation chain rather than assuming it, quantified negatives mostly survive
+and scope and prohibition erode. The corruption a persistent-memory system
+should expect is a lesson that keeps its numbers and loses its limits, which
+looks better evidenced than it is and draws less scrutiny for it.
+
+What follows for systems is not a better-behaved agent. Every model we tested
+allocates toward its current plan, and doing so is correct for the decision in
+front of it. The gap is architectural: retrieval ranks records by relevance to
+the plan, and nothing ranks them by what it would cost to be wrong. A
+persistent-memory system needs a verification scheduler alongside its retriever,
+with the lineage depth, scope breadth, and last-verified time to run it.
 
 \bibliography{refs}
 

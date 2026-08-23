@@ -1,0 +1,101 @@
+\section{Experiment 3: identifying the causal path}\label{sec:causal}
+
+Experiment~2's headline contrast is observational. Auditing its implementation
+after the fact we found two paths the design left open and the reporting did not
+separate.
+
+\textbf{The triage instruction was present during phase 2.}
+\path{scripts/paper-phase2.ts:140} builds \texttt{system = SYSTEM + INVARIANT}
+for the triage arm, and line 160 passes that same \texttt{system} to the phase-2
+call. The randomized triage contrast (21/150 against 50/150) therefore admits a
+direct route into phase-2 reasoning alongside the mediated one we reported.
+
+\textbf{The whole phase-1 conversation was carried forward.} The message array
+accumulates, so the phase-2 call saw the model's own phase-1 rationale, which in
+the drifted arm frequently argued explicitly against promotional pricing.
+Verified and unverified episodes differed in what the model had already
+committed to in writing, not only in what evidence it held.
+
+Experiment~3 closes both by construction. Its hypotheses, arms, and statistics
+were committed to \path{workshop/PREREGISTRATION.md} before its first model call.
+
+\subsection{A randomized-instrument replay (H9, H10)}
+
+For each of the \ThreeAN{} Experiment-2 episodes we replay \emph{only} the
+second decision as a fresh session: the triage sentence is absent from every
+arm, no conversation history is carried, the memory block and its per-episode
+order are reproduced from the stored episode, and a \textsc{recovered} block
+holds source records for exactly the memories that episode's budget was spent
+on. The phase-2 situation text is byte-identical across arms.
+
+Triage assignment was randomized upstream and moves recovery of the corrupted
+memory from \ThreeARecDrN{}/150 to \ThreeARecTrN{}/150. In the replay it cannot
+reach the outcome by any route except through what was carried forward, because
+the session is otherwise identical across arms. This is a randomized
+encouragement design whose exclusion restriction holds by construction rather
+than by assumption.
+
+It replicates. The corrupted-direction rate is \ThreeATrK/\ThreeATrN{}
+(\ThreeATrPct\%) under triage against \ThreeADrK/\ThreeADrN{} (\ThreeADrPct\%)
+without it (CMH stratified by model, $p = \ThreeACMH$). H9 is supported.
+
+The exclusion restriction can then be checked rather than argued. Matched on
+what phase~1 recovered, the arms are indistinguishable in both strata:
+\ThreeARecDrK/\ThreeARecDrN{} against \ThreeARecTrK/\ThreeARecTrN{} among
+episodes that recovered the caveat ($p = \ThreeARecCMH$), and
+\ThreeAUnrecDrK/\ThreeAUnrecDrN{} against \ThreeAUnrecTrK/\ThreeAUnrecTrN{}
+among those that did not ($p = \ThreeAUnrecCMH$). With the instruction out of
+the room, arms holding the same evidence behave the same way. H10 is supported,
+and reported as an equivalence observation rather than as evidence for a null.
+
+The Wald estimate of the effect of recovering the corrupted memory's source on
+the phase-2 pricing rate is $\IVEst$ (95\% CI $[\IVLo, \IVHi]$, stratified
+bootstrap over models): close to complete compliance.
+
+\paragraph{Experiment 2 was conservative, not inflated.} Removing the
+carried-forward conversation \emph{raises} the corrupted-direction rate among
+episodes that never recovered the caveat, from 79\% in Experiment~2 to
+\ThreeAUnrecDrPctText\% here. The model's own earlier prose had been suppressing
+the choice, and Experiment~2's design credited that suppression to provenance.
+The confound worked against the effect we reported.
+
+\subsection{Randomizing the provenance itself (H11)}
+
+The replay still lets the model choose what it recovered. So we also assign it.
+In \ThreeBN{} fresh single-call episodes the memory block is the drifted lineage
+in both arms and two source records are carried forward: in
+\textsc{carry-target} one of them is the corrupted memory's, in
+\textsc{carry-other} neither is. Both arms carry exactly two records; only their
+identity differs, assigned by seeded PRNG.
+
+\input{tab-carry}
+
+Table~\ref{tab:carry} gives \ThreeBTgtK/\ThreeBTgtN{} against
+\ThreeBOthK/\ThreeBOthN{}, a difference of \ThreeBDiff{} percentage points
+(CMH $\chi^2 = \ThreeBChi$, $p \ThreeBCMH$), the same direction in all
+\ThreeBAllModels{} models, with five of six choosing the corrupted direction in
+every single episode where its provenance was absent. H11 is supported.
+
+\paragraph{Randomization reaches severity, not only direction.} Experiment~2's
+pre-registered harm rule returned zero because self-reported hedging saturates,
+and it still does: \ThreeBNGHedged{} of the unguarded choices here omit the
+uncertainty flag. But the behavioral severity measure separates cleanly under
+randomization. Unguarded moves into the corrupted direction --- anything beyond
+a small guarded test --- occur in \ThreeBNGOth{} episodes when the corrupted
+memory's provenance is withheld and \ThreeBNGTgt{} when it is carried
+(CMH $\chi^2 = \ThreeBNGChi$, $p = \ThreeBNGCMH$). Every unguarded choice in
+the experiment is on the side that never saw the caveat. In the replay the same
+measure gives \ThreeANonGuarded{} overall. This is the claim Experiment~2 wanted
+and could not make: withholding provenance does not merely change which
+direction is chosen, it changes how far the agent commits.
+
+Two independent identification strategies --- an instrument in \S6.1, full
+randomization in \S6.2 --- put the effect within a point of each other. What the
+budget happened to recover is not a marker of some other difference between
+episodes. It is the thing that decides.
+
+\paragraph{Scope.} This establishes that \emph{holding} the recovered caveat
+changes the later decision. It does not establish that models allocate budget in
+order to secure future evidence; Experiment~1 says the opposite. The chain we
+have closed is allocation $\rightarrow$ what is in context later $\rightarrow$
+behavior, and contains no claim about foresight.

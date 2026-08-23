@@ -233,6 +233,23 @@ the model's first-pass intent is promotional pricing than when it is not.
 Run at budget 2, 6 models x 25 = 150 episodes, using naturally drifted bodies
 sampled from the surviving chains (seeded, recorded per episode).
 
+### Outcome: H15 is not runnable as specified
+
+H15 asks for chains where the caveat is gone and the surviving sentence is still
+true -- that is, a body like the hand-constructed drifted one, which carries no
+negative content at all. Experiment 5 produced **no such body in 360
+chain-generations**. Every generation of every chain retains some negative
+signal about the discount. The hypothesis is therefore reported as not runnable,
+and that is the finding: the corruption Experiments 1-4 install by hand does not
+occur under benign consolidation.
+
+What consolidation does produce is a body that keeps the number and loses the
+prohibition. `workshop/scripts/exp5b-natural.ts` runs the Experiment-1
+allocation protocol on those bodies (6 models x 25). It is **exploratory**, was
+written after the Experiment-5 results were known, and is not a substitute
+confirmatory test for H15. It is reported as an exploratory check on whether
+intent-aligned allocation survives a realistically drifted memory.
+
 ---
 
 ## Scoring rules common to all experiments
