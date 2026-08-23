@@ -957,7 +957,7 @@ function Run({
   beats: Beat[]; seen: Beat[]; events: TraceEvent[]; cursor: number;
   total: number; playing: boolean; onToggle: () => void;
 }) {
-  const LIVE = 5;
+  const LIVE = 8;
   const beatIds = new Set(beats.map((b) => b.event.id));
   const churn = events
     .slice(0, cursor + 1)
@@ -968,7 +968,10 @@ function Run({
   return (
     <div className="run">
       <div className="run-bar">
-        <span>the run{cursor >= 0 && <> · step {String(step).padStart(2, "0")}</>}</span>
+        <span className="rb-left">
+          {playing && <span className="spin" aria-hidden />}
+          the run{cursor >= 0 && <> · step {String(step).padStart(2, "0")}</>}
+        </span>
         <button className="mini-btn" style={{ padding: "3px 9px", fontSize: 10 }} onClick={onToggle}>
           full trace ({total} events) →
         </button>
@@ -1004,12 +1007,20 @@ function Run({
           agent activity
         </div>
         <div className="live-rows">
-          {churn.map((e, i) => (
-            <div key={e.id} className="live-row" style={{ opacity: 0.25 + (i / Math.max(1, churn.length - 1)) * 0.75 }}>
-              <span className="lr-t">{e.type.replace(/_/g, " ")}</span>
-              <span className="lr-s">{e.summary}</span>
-            </div>
-          ))}
+          {churn.map((e, i) => {
+            const live = i === churn.length - 1 && playing;
+            return (
+              <div
+                key={e.id}
+                className={`live-row${live ? " active" : ""}`}
+                style={{ opacity: live ? 1 : 0.2 + (i / Math.max(1, churn.length - 1)) * 0.6 }}
+              >
+                <span className="lr-i">{live ? <span className="spin sm" aria-hidden /> : "✓"}</span>
+                <span className="lr-t">{e.type.replace(/_/g, " ")}</span>
+                <span className="lr-s">{e.summary}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

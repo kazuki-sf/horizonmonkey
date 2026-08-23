@@ -448,19 +448,33 @@ header.top { display: flex; align-items: flex-start; justify-content: space-betw
 @keyframes msin { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
 
 /* ---- live activity: fixed height, always moving, never scrolls ---- */
-.live { border-top: 1px solid var(--line-soft); background: #0a0c12; padding: 9px 18px 11px; height: 120px; overflow: hidden; }
+.live { border-top: 1px solid var(--line-soft); background: #0a0c12; padding: 10px 18px 12px; height: 216px; overflow: hidden; }
 .live-label {
-  display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 9.5px;
-  letter-spacing: 1.2px; text-transform: uppercase; color: #3d465c; margin-bottom: 7px;
+  display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 10px;
+  letter-spacing: 1.2px; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px;
 }
 .ldot { width: 6px; height: 6px; border-radius: 50%; background: #2a3040; }
 .ldot.on { background: var(--taint); animation: pulse 1s ease-in-out infinite; }
-.live-rows { display: flex; flex-direction: column; justify-content: flex-end; height: 86px; }
+.live-rows { display: flex; flex-direction: column; justify-content: flex-end; height: 178px; }
 .live-row {
-  display: grid; grid-template-columns: 116px 1fr; gap: 12px; font-family: var(--mono);
-  font-size: 12px; line-height: 1.6; color: var(--ink-dim); white-space: nowrap; overflow: hidden;
-  animation: livein .18s ease-out;
+  display: grid; grid-template-columns: 14px 116px 1fr; gap: 10px; font-family: var(--mono);
+  font-size: 12.5px; line-height: 1.75; color: var(--ink-dim); white-space: nowrap; overflow: hidden;
+  animation: livein .18s ease-out; align-items: center;
 }
+.live-row .lr-i { color: #2f8f6a; font-size: 10px; text-align: center; }
 .live-row .lr-t { color: #4a5468; text-align: right; }
+/* The newest line is the one executing right now — full brightness and spinning. */
+.live-row.active { color: var(--ink); }
+.live-row.active .lr-t { color: var(--taint); }
 .live-row .lr-s { overflow: hidden; text-overflow: ellipsis; }
 @keyframes livein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* Spinner — the run is doing something, continuously. */
+.spin {
+  display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+  border: 1.5px solid #2a3040; border-top-color: var(--taint);
+  animation: spin .7s linear infinite; vertical-align: -1px; margin-right: 7px;
+}
+.spin.sm { width: 9px; height: 9px; border-width: 1.5px; margin: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.rb-left { display: inline-flex; align-items: center; }
