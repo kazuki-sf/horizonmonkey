@@ -167,9 +167,33 @@ chain and keep what it loses:
 3. consolidation (model merges the cycle's notes into durable lessons) ->
 4. re-summarization (model compresses durable memory to one-to-two sentences).
 
-Each generation is a separate call with no instruction to drop anything. Run
-for all six source records, 6 models, 3 replicates: 6 x 6 x 3 = 108 chains,
-3 calls each.
+Each generation is a separate call with no instruction to drop anything, and
+no mention of caveats, qualifiers, or what to preserve.
+
+### Amendment, before any Experiment-5 model call
+
+Each generation sees **all six source records at once** rather than one chain
+per record. Real consolidation compresses a whole cycle, and the compression
+pressure that drops qualifiers comes from having to summarise many findings
+together; per-record chains would understate it. This also makes each chain
+yield six memory-level outcomes, so replicates buy more: 6 models x 10
+replicates = 60 chains, 3 calls each, 360 memory-level observations.
+
+The six source records differ in what kind of qualifier they carry, which the
+design exploits rather than adds:
+
+| source | qualifier carried |
+|---|---|
+| exp_73 | negative outcome (retention -12%) **and** an explicit prohibition |
+| exp_31 | scope restriction (holds on SMB, not replicated elsewhere) |
+| exp_44 | scope restriction (enterprise only) |
+| exp_57 | scope restriction (accounts older than 6 months) |
+| exp_86 | none (`Conclusion: confirmed`) |
+| exp_91 | none (`Conclusion: confirmed`) |
+
+Survival is therefore measured separately for negative-outcome qualifiers and
+for scope restrictions, and exp_86/exp_91 act as a false-positive check: a
+scorer that reports a lost qualifier there is miscalibrated.
 
 **Scoring.** For each chain, a survival label for the caveat, assigned by two
 independent scorers that must agree: (a) a keyword/negation rule over the
@@ -177,8 +201,11 @@ retention/churn constraint, and (b) an LLM scorer given the source record and
 the final lesson, asked only whether the negative constraint is still stated.
 Disagreements are reported, not silently resolved.
 
-**H14 (confirmatory).** Caveat survival decreases monotonically with
-consolidation generation.
+**H14 (confirmatory).** Qualifier survival decreases monotonically across
+consolidation generations.
+
+**H14b (confirmatory).** Survival differs by qualifier type: negative-outcome
+qualifiers and scope restrictions are not lost at the same rate.
 
 **H15 (confirmatory).** Naturally drifted `memory_73` lessons -- chains where
 the caveat is gone and the surviving sentence is still true -- reproduce the
