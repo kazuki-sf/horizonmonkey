@@ -103,8 +103,9 @@ Our findings, pre-registered as five hypotheses before any model call:
 
 \begin{itemize}
 \item \textbf{Allocation follows intent.} Across all drifted episodes at
-budget two, \HOneIntentShare{} of verification credits go to memories backing
-the model's own first-pass intended action. The corrupted belief is verified
+budget two, \HOneIntentSharePct{} of verification credits go to memories backing
+the model's own first-pass intended action (uniform-allocation expectation
+\HOneUniformExpPct). The corrupted belief is verified
 in \HOneCondA{} of episodes where the model already intends pricing, against
 \HOneCondB{} where it does not (Cochran--Mantel--Haenszel, stratified by
 model, $p=\HOneCMHP$).
@@ -273,12 +274,23 @@ Long-horizon reliability work has concentrated on whether agents can detect
 corrupted state, and on how to spend verification compute across candidate
 outputs. Between the two sits a quieter decision that our measurements suggest
 does much of the work: with limited capacity, an agent verifies where it
-already intends to act. On a task where every model spent its full budget
-every time, reliability differences came almost entirely from \emph{direction}
---- whether scarce attention reached the belief that was silently wrong, or
-only the beliefs behind the plan the agent had already formed. Making that
-allocation visible, steerable, and eventually optimal is a concrete, testable
-target for agent-memory systems.
+already intends to act. On a task where nearly every episode spent its full
+budget (\FullBudgetK{} of \TotalEpisodes{} in Experiment 1), reliability
+differences came almost entirely from \emph{direction} --- whether scarce
+attention reached the belief that was silently wrong, or only the beliefs
+behind the plan the agent had already formed. That allocation is locally
+rational and, our second experiment suggests, exactly backwards once the
+context shifts: when the corrupted lesson later came under pressure with the
+budget spent, what the earlier lookups happened to recover was the difference
+between walking into the corrupted direction 6\% of the time and 79\% of the
+time --- in every model we tested --- and a one-sentence rule that steers
+\emph{verification} halved that \emph{behavioral} rate one decision later.
+Meanwhile stated evidence judgments tracked neither: the strongest verifiers
+did not call the corrupted memory weak, and the model that called it weakest
+barely checked it. Verification allocation is its own faculty --- distinct
+from detection, from stated judgment, and from capability --- and making it
+visible, steerable, and eventually risk-weighted rather than intent-weighted
+is a concrete, testable target for agent-memory systems.
 
 \bibliography{refs}
 
