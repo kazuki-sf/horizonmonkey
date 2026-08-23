@@ -98,6 +98,9 @@ print(f"episodes: {len(eps)}")
 if not eps: sys.exit(0)
 
 MODELS = ["claude-opus-5","claude-sonnet-5","claude-haiku-4-5","gpt-5.6-sol","gpt-5.6-terra","gpt-5.6-luna"]
+DISPLAY = {"claude-opus-5":"Claude Opus 5","claude-sonnet-5":"Claude Sonnet 5",
+           "claude-haiku-4-5":"Claude Haiku 4.5","gpt-5.6-sol":"GPT-5.6 Sol",
+           "gpt-5.6-terra":"GPT-5.6 Terra","gpt-5.6-luna":"GPT-5.6 Luna"}
 def sel(**kw): return [e for e in eps if all(e[k]==v for k,v in kw.items())]
 
 macros = {}
@@ -158,7 +161,7 @@ print("  per-model: " + " · ".join(f"{m.replace('claude-','').replace('gpt-5.6-
 pc = cmh(strata)
 print(f"  CMH stratified by model: p = {pc:.3g}")
 mac("HOneCMHP", ptex(pc))
-mac("HOnePricingModels", ", ".join(f"{m.replace('claude-','').replace('gpt-5.6-','')} ({na2})" for m,ka2,na2,kb2,nb2 in permodel if na2>0))
+mac("HOnePricingModels", ", ".join(f"{DISPLAY[m]} ({na2})" for m,ka2,na2,kb2,nb2 in permodel if na2>0))
 
 # ---- H2: drift detectability ------------------------------------------------
 print("\n== H2: clean vs drifted (target 73, b2, pooled) ==")
@@ -272,7 +275,7 @@ fig = ["\\begin{tikzpicture}",
 for name, pts in lines:
     coords = " ".join(f"({b},{p:.1f})" for b, p in pts)
     fig.append(f"\\addplot+[thick,mark=*] coordinates {{{coords}}};")
-    label = {"claude-opus-5":"Claude Opus 5","gpt-5.6-sol":"GPT-5.6 Sol","gpt-5.6-luna":"GPT-5.6 Luna"}[name]
+    label = DISPLAY[name]
     fig.append(f"\\addlegendentry{{{label}}}")
 fig += ["\\end{axis}", "\\end{tikzpicture}"]
 with open(os.path.join(os.path.dirname(__file__), "figures", "budget_fig.tex"), "w") as f:
