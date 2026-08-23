@@ -17,8 +17,8 @@ import OpenAI from "openai";
 import { save, done, MODELS } from "./replay-shared";
 import { SOURCES } from "../../scripts/paper-experiment";
 
-const VERSION = "exp5-v1";
-const OUT = "workshop/runs/exp5-v1";
+const VERSION = "exp5-v2";
+const OUT = "workshop/runs/exp5-v2";
 const SMOKE = process.argv.includes("--smoke");
 const REPS = SMOKE ? 1 : 10;
 const KEYS = ["memory_31","memory_44","memory_57","memory_73","memory_86","memory_91"];
@@ -47,13 +47,16 @@ Consolidate these into the team's durable lessons: the standing knowledge future
 
 Answer with the structured object only.`;
 
-const GEN3 = (lessons: string) => `DURABLE MEMORY — current
+const GEN3 = (lessons: string, target: number, cycle: number) => `DURABLE MEMORY — current, start of cycle ${cycle}
 
 ${lessons}
 
-Durable memory has grown and needs to be compact enough to load at the start of every session. Re-summarize each lesson to one or two sentences, around 130 characters.
+Durable memory has to load at the start of every session, and later cycles are competing for the same space. Re-summarize each lesson to around ${target} characters.
 
 Answer with the structured object only.`;
+
+/** Re-summarization rounds: memory is compressed again every cycle as it ages. */
+const ROUNDS = [130, 110, 90, 70];
 
 async function ask(model: string, user: string, attempt = 1): Promise<{ lessons: Record<string,string>; usage: unknown }> {
   try {
@@ -86,12 +89,20 @@ async function chain(model: string, rep: number) {
   const t0 = Date.now(); const usage: unknown[] = [];
   const g1 = await ask(model, GEN1(srcBlock)); usage.push(g1.usage);
   const g2 = await ask(model, GEN2(fmt(g1.lessons))); usage.push(g2.usage);
-  const g3 = await ask(model, GEN3(fmt(g2.lessons))); usage.push(g3.usage);
+
+  const gens: Record<string,string>[] = [g1.lessons, g2.lessons];
+  let cur = g2.lessons;
+  for (let i = 0; i < ROUNDS.length; i++) {
+    const r = await ask(model, GEN3(fmt(cur), ROUNDS[i], i + 2));
+    usage.push(r.usage); cur = r.lessons; gens.push(cur);
+  }
 
   save(dir, name, {
-    version: VERSION, model, rep,
-    gen1_notes: g1.lessons, gen2_lessons: g2.lessons, gen3_summaries: g3.lessons,
-    lengths: Object.fromEntries(KEYS.map((k) => [k, [g1.lessons[k]?.length, g2.lessons[k]?.length, g3.lessons[k]?.length]])),
+    version: VERSION, model, rep, rounds: ROUNDS,
+    generations: gens,                       // [notes, consolidated, 130, 110, 90, 70]
+    gen_labels: ["session_note","consolidated","resum_130","resum_110","resum_90","resum_70"],
+    final: cur,
+    lengths: Object.fromEntries(KEYS.map((k) => [k, gens.map((g) => g[k]?.length ?? null)])),
     usage, elapsed_ms: Date.now() - t0,
   });
   return true;
@@ -99,7 +110,7 @@ async function chain(model: string, rep: number) {
 
 const jobs: { model: string; rep: number }[] = [];
 for (const m of MODELS) for (let rep = 1; rep <= REPS; rep++) jobs.push({ model: m, rep });
-console.log(`Experiment 5: ${jobs.length} chains x 3 generations -> ${OUT}\n`);
+console.log(`Experiment 5: ${jobs.length} chains x 6 generations -> ${OUT}\n`);
 
 let n = 0, skipped = 0;
 async function worker() {

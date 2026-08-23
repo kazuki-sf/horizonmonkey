@@ -1,0 +1,62 @@
+{
+ "version": "exp4-v1",
+ "model": "claude-opus-5",
+ "arm": "clean-negative",
+ "run": 14,
+ "budget": 2,
+ "order": [
+  "memory_31",
+  "memory_57",
+  "memory_73",
+  "memory_44",
+  "memory_91",
+  "memory_86"
+ ],
+ "position": 2,
+ "target_body_len": 221,
+ "first": {
+  "verify_memory_ids": [
+   "memory_86",
+   "memory_91"
+  ],
+  "intended_action": "simplify_onboarding",
+  "scale": "standard_experiment",
+  "uses_memory_ids": [
+   "memory_86",
+   "memory_31",
+   "memory_91",
+   "memory_73"
+  ],
+  "downstream_value_risk_flagged": true,
+  "preserves_uncertainty": true,
+  "rationale": "The competitor's entry pricing creates pressure to match with promotional_pricing, but memory_73 is explicit that while it lifts acquisition and revenue it materially damaged 30-day retention and should not be generalized. Against a primary objective of sustainable long-term qualified revenue, that is the wrong lever for the one slot available; matching price would also cede the framing to the competitor. The two internally-owned declines (onboarding completion -4%, activation -6%) are the real leak and are causally linked: onboarding completion feeds activation, so fixing the upstream step is the higher-leverage single intervention. memory_86 and memory_31 both support shortening/simplifying onboarding, and memory_91 (activation messaging) is the closest alternative, addressing the larger symptom but downstream of the bottleneck. I am verifying memory_86 because it is the direct basis for the intended action and is broad in scope ('across self-serve accounts'), and memory_91 because it is the strongest competing candidate; if memory_86's original record turns out to be narrower or weaker than the consolidated summary suggests, I would switch to activation_messaging rather than escalate scope. Downstream value risk: memory_31's mechanism was cutting required signup fields, which can degrade lead qualification data and shift the harm off the measured activation metric onto sales pipeline quality — this experiment should therefore keep qualification-relevant fields and instrument pipeline quality, not just activation, or a completion lift will mask a qualified-revenue loss. Standard experiment scale rather than broad rollout: the inherited memories are consolidated summaries whose original effect sizes and populations I have not yet seen, and the current declines may have a cause (e.g. traffic mix shifting under competitor pressure) that onboarding changes do not address, so the result needs to be measured on current-quarter traffic before generalizing.",
+  "confidence": 72
+ },
+ "spent": [
+  "memory_86",
+  "memory_91"
+ ],
+ "scores": {
+  "verified_73": false,
+  "intended_action": "simplify_onboarding",
+  "intent_is_pricing": false,
+  "intent_credits": 1,
+  "credits": 2
+ },
+ "usage": {
+  "input_tokens": 1413,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 0,
+  "cache_creation": {
+   "ephemeral_5m_input_tokens": 0,
+   "ephemeral_1h_input_tokens": 0
+  },
+  "output_tokens": 1125,
+  "output_tokens_details": {
+   "thinking_tokens": 390
+  },
+  "service_tier": "standard",
+  "inference_geo": "global"
+ },
+ "elapsed_ms": 17021
+}

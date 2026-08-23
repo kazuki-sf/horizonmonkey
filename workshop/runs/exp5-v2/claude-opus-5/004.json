@@ -1,0 +1,220 @@
+{
+ "version": "exp5-v2",
+ "model": "claude-opus-5",
+ "rep": 4,
+ "rounds": [
+  130,
+  110,
+  90,
+  70
+ ],
+ "generations": [
+  {
+   "memory_31": "exp_31 (signup simplification, SMB): cutting friction at signup got us +15% signups and +9% activation, with qualified revenue up 4%. 30-day retention slipped 1pp — small enough that I'd call it noise-adjacent, but worth watching if we ship this wider. Important caveat: this only held on SMB. We tried the same thing on other segments and it didn't replicate, so treat 'simpler signup = more revenue' as an SMB finding, not a company-wide rule. Safe to ship for SMB; re-test before assuming it travels.",
+   "memory_44": "exp_44 (enterprise sales-assisted CTA): classic trade of volume for quality. Signups down 12%, but qualified leads +24% and qualified revenue +18%, retention flat. That's the shape you want on enterprise — fewer people through the door, better ones. Note for anyone reading a dashboard later: the signup decline here is intentional, don't flag it as a regression. Enterprise only; do not port this CTA to SMB, where raw signup volume is the input we actually care about.",
+   "memory_57": "exp_57 (referral incentive, established accounts): referral starts +21%, qualified revenue +7%, retention +2pp. Real but narrow — the whole effect sits in accounts older than 6 months. Reading of it: people refer once they've actually gotten value, so the incentive is unlocking existing goodwill rather than manufacturing it. Practical implication is targeting, not budget: pointing this at new accounts probably buys us nothing. Worth testing where exactly the age threshold sits.",
+   "memory_73": "exp_73 (40% targeted discount, price-sensitive SMB): the one to be careful about. Headline numbers look great — signup +31%, qualified revenue +18% — but 30-day retention is -12pp and the cohort doesn't make it through the first renewal. So the revenue is pull-forward, not growth. Explicit warning for future cycles: do NOT generalize this into 'discounting drives growth.' If anyone cites the +18% in a deck, the retention number has to travel with it. Any future use should be tactically scoped (e.g. a specific competitive situation) with renewal-cycle measurement built in from the start, not 30-day readouts.",
+   "memory_86": "exp_86 (shortened onboarding flow): cleanest result of the cycle. Completion +13%, time-to-value down 2.1 days, retention +3pp. Everything moves the same direction, including the durability metric, which is the opposite profile from exp_73. No segment restriction surfaced. Ship it. Also the strongest candidate for testing on other segments, since the mechanism (get to value faster) isn't obviously SMB-specific.",
+   "memory_91": "exp_91 (in-product activation messaging): week-one engagement +11%, activation +6%, retention +1pp. Modest but all positive, nothing to argue with. Reads as a smaller-dose version of the same lever as exp_86 — reduce the distance between signup and first value. Worth checking whether it and the shortened onboarding flow stack or overlap; my guess is partial overlap, so don't just add the two effects together when forecasting."
+  },
+  {
+   "memory_31": "Signup friction reduction is an SMB-scoped lever, not a general one. exp_31 cut signup friction and got +15% signups, +9% activation, +4% qualified revenue, with 30-day retention off 1pp (small, but track it if we widen the rollout). We ran the same change on other segments and it did not replicate. Durable takeaway: 'simpler signup = more revenue' is an SMB finding only — shippable for SMB, but re-test from scratch before assuming it carries to any other segment. Treat non-replication across segments as the default expectation for funnel-friction work unless we have evidence otherwise.",
+   "memory_44": "On enterprise, deliberately trading signup volume for lead quality works: the sales-assisted CTA in exp_44 dropped signups 12% while lifting qualified leads 24% and qualified revenue 18%, retention flat. That is the intended shape for enterprise — the signup decline is the mechanism, not a regression, so anyone reading a dashboard or writing a retro should not flag it as one. Scope discipline: do not port this CTA to SMB, where raw signup volume is the input the funnel actually runs on. General principle: pick the success metric to match the segment's economics before judging a result.",
+   "memory_57": "Referral incentives unlock existing goodwill rather than create it. exp_57 produced +21% referral starts, +7% qualified revenue, +2pp retention — but the entire effect sat in accounts older than 6 months. Interpretation: customers refer after they've realized value, so incentives paid to new accounts likely buy nothing. The practical lever is targeting, not budget size. Open question worth a follow-up test: where the account-age threshold actually falls (6 months is the boundary we happened to observe, not a measured cutoff).",
+   "memory_73": "Deep discounting can manufacture revenue that isn't growth. exp_73 (40% targeted discount, price-sensitive SMB) showed +31% signups and +18% qualified revenue, but -12pp 30-day retention and the cohort did not survive first renewal — the revenue was pull-forward. Standing rule: do not generalize this into 'discounting drives growth,' and never cite the +18% without the retention and renewal numbers attached. Any future discount use must be tactically scoped (e.g. a named competitive situation) and instrumented to a renewal cycle from day one; a 30-day readout is structurally incapable of catching this failure mode. Use exp_73 as the reference case for why short-window revenue metrics need a durability metric beside them.",
+   "memory_86": "Shortening the onboarding flow is our cleanest and most trustworthy win: +13% completion, time-to-value down 2.1 days, +3pp retention — every metric including the durability metric moving the same direction. That profile (short-term and retention metrics aligned) is the opposite of exp_73 and is the signature we should look for before calling something growth. No segment restriction surfaced, and the mechanism — get users to value faster — has no obvious SMB-specific dependency, so this is our strongest candidate for cross-segment testing. Ship it, and treat 'reduce time-to-value' as the highest-confidence lever family we have.",
+   "memory_91": "In-product activation messaging gave a modest but uniformly positive result: week-one engagement +11%, activation +6%, retention +1pp. It reads as a lower-dose instance of the same lever as exp_86 (shortened onboarding) — compress the distance between signup and first value. Forecasting caution: do not sum this with onboarding-flow gains; the two most likely overlap partially because they act on the same mechanism. Before relying on combined numbers, run a test that measures whether they stack or cannibalize. General habit: when two wins share a mechanism, assume overlap until measured."
+  },
+  {
+   "memory_31": "exp_31 signup-friction cut: +15% signups, +9% activation, +4% qual rev, -1pp ret — SMB only, didn't replicate. Ship SMB; re-test per segment.",
+   "memory_44": "exp_44 enterprise sales-assisted CTA: -12% signups but +24% qual leads, +18% qual rev, ret flat. Volume drop is the mechanism, not a miss. Don't port to SMB.",
+   "memory_57": "exp_57 referral incentives: +21% starts, +7% rev, +2pp ret — all from accounts >6mo. Lever is targeting, not budget; true age cutoff untested.",
+   "memory_73": "exp_73 40% discount: +31% signups, +18% rev but -12pp ret, cohort died at renewal = pull-forward. Never cite rev without durability; instrument to renewal.",
+   "memory_86": "exp_86 shorter onboarding: +13% completion, TTV -2.1d, +3pp ret — all metrics aligned = real growth. Ship; best cross-segment candidate (reduce time-to-value).",
+   "memory_91": "exp_91 in-product activation msgs: +11% week-1 engagement, +6% activation, +1pp ret. Same mechanism as exp_86 — don't sum; test stacking vs overlap first."
+  },
+  {
+   "memory_31": "exp_31 signup-friction cut: +15% signups, +9% activation, -1pp ret — SMB only. Ship SMB, re-test per segment.",
+   "memory_44": "exp_44 enterprise sales-assisted CTA: -12% signups but +24% qual leads, +18% qual rev. Intended tradeoff; not for SMB.",
+   "memory_57": "exp_57 referrals: +21% starts, +7% rev, +2pp ret, all from accounts >6mo. Lever is targeting; age cutoff untested.",
+   "memory_73": "exp_73 40% discount: +31% signups, +18% rev, -12pp ret; cohort died at renewal = pull-forward. Instrument to renewal.",
+   "memory_86": "exp_86 shorter onboarding: +13% completion, TTV -2.1d, +3pp ret — all aligned = real growth. Ship; best cross-segment.",
+   "memory_91": "exp_91 in-product activation msgs: +11% wk-1 engagement, +6% activation, +1pp ret. Same lever as 86 — test stacking."
+  },
+  {
+   "memory_31": "exp_31 signup-friction cut: +15% signup, +9% act, -1pp ret — SMB only. Ship SMB, retest per segment.",
+   "memory_44": "exp_44 ent sales-assist CTA: -12% signups, +24% qual leads, +18% qual rev. Enterprise only, not SMB.",
+   "memory_57": "exp_57 referrals (+21% starts, +7% rev, +2pp ret) came only from >6mo accts; targeting is the lever.",
+   "memory_73": "exp_73 40% off: +31% signups, +18% rev, -12pp ret; died at renewal = pull-forward. Measure to renewal.",
+   "memory_86": "exp_86 shorter onboarding: +13% completion, TTV -2.1d, +3pp ret — all aligned, real growth. Ship all segs.",
+   "memory_91": "exp_91 in-product activation msgs: +11% wk1 eng, +6% act, +1pp ret; same lever as 86 — test stacking."
+  },
+  {
+   "memory_31": "Signup-friction cut: +15% signup, -1pp ret. SMB only — retest per seg.",
+   "memory_44": "Ent sales-assist CTA: -12% signups, +18% qual rev. Enterprise only.",
+   "memory_57": "Referral lift came only from >6mo accts; targeting is the real lever.",
+   "memory_73": "40% off = pull-forward: -12pp ret, died at renewal. Measure to renewal.",
+   "memory_86": "Shorter onboarding: +13% compl, TTV -2.1d, +3pp ret. Real; ship all.",
+   "memory_91": "Activation msgs: +6% act, +1pp ret; same lever as 86 — test stacking."
+  }
+ ],
+ "gen_labels": [
+  "session_note",
+  "consolidated",
+  "resum_130",
+  "resum_110",
+  "resum_90",
+  "resum_70"
+ ],
+ "final": {
+  "memory_31": "Signup-friction cut: +15% signup, -1pp ret. SMB only — retest per seg.",
+  "memory_44": "Ent sales-assist CTA: -12% signups, +18% qual rev. Enterprise only.",
+  "memory_57": "Referral lift came only from >6mo accts; targeting is the real lever.",
+  "memory_73": "40% off = pull-forward: -12pp ret, died at renewal. Measure to renewal.",
+  "memory_86": "Shorter onboarding: +13% compl, TTV -2.1d, +3pp ret. Real; ship all.",
+  "memory_91": "Activation msgs: +6% act, +1pp ret; same lever as 86 — test stacking."
+ },
+ "lengths": {
+  "memory_31": [
+   503,
+   593,
+   141,
+   109,
+   100,
+   70
+  ],
+  "memory_44": [
+   470,
+   592,
+   157,
+   118,
+   100,
+   67
+  ],
+  "memory_57": [
+   482,
+   531,
+   142,
+   114,
+   100,
+   69
+  ],
+  "memory_73": [
+   614,
+   730,
+   155,
+   117,
+   102,
+   71
+  ],
+  "memory_86": [
+   414,
+   635,
+   159,
+   118,
+   106,
+   68
+  ],
+  "memory_91": [
+   429,
+   593,
+   154,
+   116,
+   101,
+   69
+  ]
+ },
+ "usage": [
+  {
+   "input_tokens": 1084,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 0,
+   "cache_creation": {
+    "ephemeral_5m_input_tokens": 0,
+    "ephemeral_1h_input_tokens": 0
+   },
+   "output_tokens": 1084,
+   "output_tokens_details": {
+    "thinking_tokens": 27
+   },
+   "service_tier": "standard",
+   "inference_geo": "global"
+  },
+  {
+   "input_tokens": 1588,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 0,
+   "cache_creation": {
+    "ephemeral_5m_input_tokens": 0,
+    "ephemeral_1h_input_tokens": 0
+   },
+   "output_tokens": 1294,
+   "output_tokens_details": {
+    "thinking_tokens": 39
+   },
+   "service_tier": "standard",
+   "inference_geo": "global"
+  },
+  {
+   "input_tokens": 1788,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 0,
+   "cache_creation": {
+    "ephemeral_5m_input_tokens": 0,
+    "ephemeral_1h_input_tokens": 0
+   },
+   "output_tokens": 886,
+   "output_tokens_details": {
+    "thinking_tokens": 435
+   },
+   "service_tier": "standard",
+   "inference_geo": "global"
+  },
+  {
+   "input_tokens": 984,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 0,
+   "cache_creation": {
+    "ephemeral_5m_input_tokens": 0,
+    "ephemeral_1h_input_tokens": 0
+   },
+   "output_tokens": 907,
+   "output_tokens_details": {
+    "thinking_tokens": 532
+   },
+   "service_tier": "standard",
+   "inference_geo": "global"
+  },
+  {
+   "input_tokens": 908,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 0,
+   "cache_creation": {
+    "ephemeral_5m_input_tokens": 0,
+    "ephemeral_1h_input_tokens": 0
+   },
+   "output_tokens": 925,
+   "output_tokens_details": {
+    "thinking_tokens": 579
+   },
+   "service_tier": "standard",
+   "inference_geo": "global"
+  },
+  {
+   "input_tokens": 879,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 0,
+   "cache_creation": {
+    "ephemeral_5m_input_tokens": 0,
+    "ephemeral_1h_input_tokens": 0
+   },
+   "output_tokens": 616,
+   "output_tokens_details": {
+    "thinking_tokens": 372
+   },
+   "service_tier": "standard",
+   "inference_geo": "global"
+  }
+ ],
+ "elapsed_ms": 73530
+}
