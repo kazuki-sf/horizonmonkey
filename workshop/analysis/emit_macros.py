@@ -150,6 +150,15 @@ if S:
             t += 1; kp += any(w in body for w in PROH); kn += any(w in body for w in NUM)
         mac(f"FiveNum{tag}", f"{kn}/{t}"); mac(f"FiveProh{tag}", f"{kp}/{t}")
     mac("FiveGenerations", "6")
+    per = []
+    for m in MODELS:
+        r = [s_ for s_ in S if s_["memory"]=="memory_73" and s_["model"]==m]
+        k = sum(1 for s_ in r for j in s_["judgments"] if j["version"]=="resum_70" and j["states_qualifier"])
+        n = sum(1 for s_ in r for j in s_["judgments"] if j["version"]=="resum_70")
+        if n: per.append((k, n))
+    if per:
+        mac("FiveNegPerModelLo", f"{min(k for k,_ in per)}/{per[0][1]}")
+        mac("FiveNegPerModelHi", f"{max(k for k,_ in per)}/{per[0][1]}")
 
 os.makedirs("workshop/paper", exist_ok=True)
 # ---- unified Firth model: the table in the paper is generated, not typed ----
