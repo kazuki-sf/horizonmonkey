@@ -7,8 +7,18 @@
 `arxiv-submission.tar.gz` (rebuild with `sh make-arxiv.sh`). arXiv compiles the
 LaTeX itself — **do not upload `paper.pdf`**. The tarball ships `paper.bbl`, so
 arXiv does not need to run BibTeX; `refs.bib` is included for provenance only.
-Verified to compile standalone from the extracted tarball with zero errors and
-zero undefined references.
+Verified: the extracted tarball compiles with zero errors, 11 pages, and all 14
+references rendered. `paper.bbl` holds 14 `\bibitem`s and no `\bibdata`, so it
+typesets without `refs.bib`.
+
+On arXiv's **Review Files** step `paper.bbl` is pre-ticked for deletion. Untick
+it — the `.bbl` path is the verified one.
+
+Caveat when checking this locally: `tectonic` re-runs BibTeX even when a `.bbl`
+exists, so deleting `refs.bib` and rebuilding with tectonic drops the
+bibliography entirely. That is tectonic behaviour, not a tarball defect — arXiv
+does not run BibTeX when a `.bbl` is supplied. Verify the `.bbl` is
+self-contained rather than trying to simulate arXiv with tectonic.
 
 ## Metadata to paste into the arXiv web form
 
