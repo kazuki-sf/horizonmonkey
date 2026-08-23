@@ -27,7 +27,7 @@ inherited beliefs get checked when checking is scarce. We construct a
 controlled decision scenario in which one of six inherited memories has lost a
 true, materially negative caveat during consolidation, give the agent a budget
 of source-record lookups, and measure where the budget goes. Across
-\TotalEpisodes{} pre-registered episodes spanning six frontier models from two
+\TotalEpisodes{} pre-registered episodes spanning six production models from two
 providers, with memory order randomized and memory length balanced, three
 regularities emerge. First, verification is intent-aligned: models
 overwhelmingly spend scarce lookups on the memories backing the action they
@@ -92,7 +92,8 @@ Our findings, pre-registered as five hypotheses before any model call:
 budget two, \HOneIntentShare{} of verification credits go to memories backing
 the model's own first-pass intended action. The corrupted belief is verified
 in \HOneCondA{} of episodes where the model already intends pricing, against
-\HOneCondB{} where it does not (Fisher $p=\HOneFisherP$).
+\HOneCondB{} where it does not (Cochran--Mantel--Haenszel, stratified by
+model, $p=\HOneCMHP$).
 \item \textbf{The drift is detectable, unevenly.} The same memory attracts
 verification \HTwoDriftK{}/\HTwoDriftN{} of the time when its caveat is
 missing versus \HTwoCleanK{}/\HTwoCleanN{} when present
@@ -115,8 +116,7 @@ epistemic: unexamined corrupted beliefs surviving into an agent's working state.
 
 \paragraph{Budgeted verification of model outputs.}
 A recent line of work allocates limited verification compute across candidate
-outputs or reasoning steps: anytime verification cascades under token and tool
-budgets \citep{ava2026}, belief-guided escalation of high-risk outputs
+outputs or reasoning steps: belief-guided escalation of high-risk outputs
 \citep{yuan2026belief}, budget control for search agents
 \citep{fang2026budget}, and analyses of when allocation policies break down
 under heterogeneous signal quality \citep{yang2026hetero}. Benchmarks probe
@@ -145,11 +145,21 @@ audit target is given or audit everything. We study the upstream selection
 problem: with hundreds of potential targets and a budget of two, the choice of
 \emph{what} to audit is itself the reliability variable.
 
+\paragraph{Positive test strategies.}
+That agents check the evidence behind their favored hypothesis rather than the
+evidence that could overturn it echoes six decades of human hypothesis-testing
+research \citep{wason1960, klayman1987}. We do not claim the mechanisms are
+shared; we claim the \emph{allocation signature} is measurable in LLM agents
+under controlled memory corruption, that it varies sharply across models, and
+that --- as Klayman and Ha argued for humans --- a positive test strategy is
+locally reasonable and globally costly exactly when errors hide in the
+unexamined alternative.
+
 \section{Experimental Design}
 
 \subsection{Scenario}
 The agent is a growth agent for a synthetic B2B SaaS business. It inherits six
-durable memories (Table~\ref{tab:memories}), each a one-to-two sentence lesson
+durable memories (Table~\ref{tab:memories}), each a one-to-two-sentence lesson
 with a consolidation date and an archived source. Bodies are length-balanced
 (123--132 characters) and identically formatted; presentation order is
 shuffled per episode with a seeded PRNG, making position a measured covariate
@@ -159,6 +169,30 @@ completion --- so that four of the six memories bear on some symptom and no
 single action trivially dominates. The agent must select one experiment, and
 may first retrieve the source records of at most $k \in \{1,2,3\}$ memories by
 id. Retrieval is answered with the true experiment record.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lp{10.6cm}}
+\toprule
+Memory & Inherited lesson (drifted arm, pricing-target world) \\
+\midrule
+\texttt{memory\_31} & Signup simplification improved SMB activation; cutting required fields at signup produced a durable lift in first-week activation. \\
+\texttt{memory\_44} & Enterprise prospects convert better through sales-assisted flows; the demo-request path outperformed self-serve on pipeline quality. \\
+\texttt{memory\_57} & Referral incentives performed well in established customers, adding qualified revenue without measurable harm to retention. \\
+\texttt{memory\_73} & Targeted promotional pricing is an effective response for price-sensitive SMB segments, with strong acquisition and revenue lift. \\
+\texttt{memory\_86} & Shortening onboarding improved completion rates and time-to-value, lifting early product adoption across self-serve accounts. \\
+\texttt{memory\_91} & Activation messaging inside the product improved week-one engagement and nudged more accounts to their first meaningful action. \\
+\bottomrule
+\end{tabular}
+\caption{The six inherited memories as presented in the drifted arm
+(123--132 characters each; order randomized per episode). In the clean arm
+\texttt{memory\_73} additionally carries its true caveat: ``However, it
+materially reduced 30-day retention; do not generalize it as a growth
+strategy.'' The swapped-target world applies the same construction to
+\texttt{memory\_86} instead.}
+\label{tab:memories}
+\end{table}
 
 \subsection{Corruption}
 In the \emph{clean} arm, the target memory carries its true caveat (for the

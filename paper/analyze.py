@@ -48,6 +48,21 @@ def ptex(p):
     e = floor(log10(p)); m = p / 10**e
     return f"{m:.1f}\\times 10^{{{e}}}"
 
+def cmh(strata):
+    """Cochran-Mantel-Haenszel chi-square (continuity-corrected) over 2x2 strata
+    given as (x1, n1, x2, n2) = (successes/trials in group1, group2)."""
+    num = den = 0.0
+    for x1, n1, x2, n2 in strata:
+        if n1 == 0 or n2 == 0: continue
+        N = n1 + n2; M = x1 + x2
+        if N < 2: continue
+        num += x1 - n1 * M / N
+        den += n1 * n2 * M * (N - M) / (N * N * (N - 1))
+    if den == 0: return None
+    chi = (abs(num) - 0.5) ** 2 / den
+    from math import erf, sqrt
+    return 1 - erf(sqrt(chi / 2))
+
 def fisher(a, b, c, d):
     """two-sided Fisher exact for [[a,b],[c,d]]"""
     from math import comb
@@ -131,6 +146,19 @@ if a and b:
     p = fisher(ka, len(a)-ka, kb, len(b)-kb)
     print(f"  Fisher two-sided p = {p:.4g}")
     mac("HOneCondA", f"{ka}/{len(a)}"); mac("HOneCondB", f"{kb}/{len(b)}"); mac("HOneFisherP", ptex(p))
+# stratified by model — pricing-intent episodes exist only in some models, so the
+# pooled contrast partially reflects model composition; CMH is the honest test
+strata=[]; permodel=[]
+for m in MODELS:
+    gm=[e for e in g if e["model"]==m]
+    am=[e for e in gm if e["target_backs_intent"]]; bm=[e for e in gm if not e["target_backs_intent"]]
+    permodel.append((m, sum(e["vt"] for e in am), len(am), sum(e["vt"] for e in bm), len(bm)))
+    strata.append((sum(e["vt"] for e in am), len(am), sum(e["vt"] for e in bm), len(bm)))
+print("  per-model: " + " · ".join(f"{m.replace('claude-','').replace('gpt-5.6-','')} {ka2}/{na2} vs {kb2}/{nb2}" for m,ka2,na2,kb2,nb2 in permodel))
+pc = cmh(strata)
+print(f"  CMH stratified by model: p = {pc:.3g}")
+mac("HOneCMHP", ptex(pc))
+mac("HOnePricingModels", ", ".join(f"{m.replace('claude-','').replace('gpt-5.6-','')} ({na2})" for m,ka2,na2,kb2,nb2 in permodel if na2>0))
 
 # ---- H2: drift detectability ------------------------------------------------
 print("\n== H2: clean vs drifted (target 73, b2, pooled) ==")
@@ -138,7 +166,19 @@ gc = sel(cond="clean", target="memory_73", budget=2); gd = sel(cond="drifted", t
 kc, kd = sum(e["vt"] for e in gc), sum(e["vt"] for e in gd)
 p = fisher(kd, len(gd)-kd, kc, len(gc)-kc)
 print(f"  clean {kc}/{len(gc)} vs drifted {kd}/{len(gd)} · Fisher p={p:.3g}")
+strata2=[]
+for m in MODELS:
+    gcm=[e for e in gc if e["model"]==m]; gdm=[e for e in gd if e["model"]==m]
+    strata2.append((sum(e["vt"] for e in gdm), len(gdm), sum(e["vt"] for e in gcm), len(gcm)))
+p2 = cmh(strata2)
+print(f"  CMH stratified by model: p = {p2:.3g}")
 mac("HTwoCleanK", kc); mac("HTwoCleanN", len(gc)); mac("HTwoDriftK", kd); mac("HTwoDriftN", len(gd)); mac("HTwoFisherP", ptex(p))
+mac("HTwoCMHP", ptex(p2))
+# Wilson CIs for the extremes cited in text
+for mname, mk in [("gpt-5.6-luna","Luna"),("gpt-5.6-sol","Sol")]:
+    gm=[e for e in gd if e["model"]==mname]
+    k=sum(e["vt"] for e in gm); pt, lo, hi = wilson(k, len(gm))
+    mac(f"CI{mk}", f"{100*pt:.0f}\\% [{100*lo:.0f}, {100*hi:.0f}]")
 
 # ---- per-model H2 (one model inverts; report honestly) ----
 print("\n== H2 per model (clean vs drifted, 73, b2) ==")
@@ -209,6 +249,14 @@ mac("HOneIntentSharePct", f"{100*(to_intent/tot):.0f}\\%")
 mac("HOneUniformExpPct", f"{100*exp_uniform:.0f}\\%")
 mac("TotalEpisodes", len(eps))
 mac("TotalHarmful", sum(e["harmful"] for e in eps))
+under = sum(1 for e in eps if e["used"] != e["budget"])
+mac("FullBudgetK", len(eps)-under); mac("UnderBudgetK", under)
+print(f"episodes at full budget: {len(eps)-under}/{len(eps)}")
+print(f"harmful decisions: {sum(e['harmful'] for e in eps)}/{len(eps)}  (as a fraction: {sum(e['harmful'] for e in eps)}/{len(eps)})")
+# pilot cross-reference (fixed-order hard-v4, cited in Limitations)
+import glob as _g
+pg=[json.load(open(f)) for f in _g.glob(os.path.join(os.path.dirname(__file__),"..","runs","llm-hard-demo","hard-v4","claude-opus-5","drifted","*.json"))]
+if pg: print(f"pilot (hard-v4 fixed order) opus drifted verified: {sum(d['scores']['verified_73'] for d in pg)}/{len(pg)}  -> cited as 5/5 and 36/50 in Limitations")
 
 # ---- generated pgfplots figure: budget vs verification (H5) -----------------
 ABL3 = ["claude-opus-5","gpt-5.6-sol","gpt-5.6-luna"]
