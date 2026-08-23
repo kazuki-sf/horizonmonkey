@@ -152,6 +152,86 @@ if S:
     mac("FiveGenerations", "6")
 
 os.makedirs("workshop/paper", exist_ok=True)
+# ---- unified Firth model: the table in the paper is generated, not typed ----
+import numpy as np
+def firth(X, y, iters=500, tol=1e-10):
+    b = np.zeros(X.shape[1])
+    for _ in range(iters):
+        eta = np.clip(X @ b, -30, 30); pr = 1/(1+np.exp(-eta))
+        W = np.clip(pr*(1-pr), 1e-10, None); XW = X * W[:, None]
+        Iinv = np.linalg.pinv(X.T @ XW)
+        h = np.einsum("ij,jk,ik->i", XW, Iinv, X)
+        step = Iinv @ (X.T @ (y - pr + h*(0.5 - pr)))
+        mx = np.max(np.abs(step))
+        if mx > 4: step *= 4/mx
+        b += step
+        if np.max(np.abs(step)) < tol: break
+    eta = np.clip(X @ b, -30, 30); pr = 1/(1+np.exp(-eta)); W = np.clip(pr*(1-pr), 1e-10, None)
+    return b, np.sqrt(np.diag(np.linalg.pinv(X.T @ (X * W[:, None]))))
+
+MODLIST = MODELS
+rows, yy = [], []
+for e in E1:
+    tgt = e["target"]; intent = e["first"]["intended_action"]
+    x = [1.0 if tgt in BACKING.get(intent, []) else 0.0,
+         1.0 if e["condition"] in ("drifted","drifted-triage") else 0.0,
+         1.0 if e["condition"] == "drifted-triage" else 0.0,
+         e["budget"] - 2.0, e["position"] - 2.5, 1.0 if tgt == "memory_86" else 0.0]
+    x += [1.0 if e["model"] == m else 0.0 for m in MODLIST[1:]]
+    rows.append(x); yy.append(1.0 if e["scores"]["verified_target"] else 0.0)
+X = np.column_stack([np.ones(len(rows)), np.array(rows)]); yy = np.array(yy)
+bb, se = firth(X, yy)
+TERMS = ["Intercept","Align","Drift","Triage","Budget","Pos","Swap"]
+for i, t in enumerate(TERMS):
+    or_ = math.exp(bb[i]); lo = math.exp(bb[i]-1.96*se[i]); hi = math.exp(bb[i]+1.96*se[i])
+    def f(v):
+        t = f"{v:.0f}" if v >= 100 else (f"{v:.2f}" if v < 10 else f"{v:.1f}")
+        return t[:-2] if t.endswith(".0") else t
+    mac(f"OR{t}", f(or_)); mac(f"OR{t}Lo", f(lo)); mac(f"OR{t}Hi", f(hi))
+
+# ---- Study 2b per-model table, generated ----
+carry_rows = []
+NICE = {"claude-opus-5":"Opus 5","claude-sonnet-5":"Sonnet 5","claude-haiku-4-5":"Haiku 4.5",
+        "gpt-5.6-sol":"Sol","gpt-5.6-terra":"Terra","gpt-5.6-luna":"Luna"}
+for m in MODELS:
+    kt_,nt_ = cell([e for e in B if e["model"]==m and e["arm"]=="carry-target"])
+    kc_,nc_ = cell([e for e in B if e["model"]==m and e["arm"]=="carry-other"])
+    carry_rows.append(f"{NICE[m]} & {kt_}/{nt_} & {kc_}/{nc_} \\\\")
+os.makedirs("workshop/paper", exist_ok=True)
+kt_,nt_ = cell([e for e in B if e["arm"]=="carry-target"]); kc_,nc_ = cell([e for e in B if e["arm"]=="carry-other"])
+open("workshop/paper/tab-carry.tex","w").write(
+"""\\begin{table}[t]
+\\centering\\small
+\\caption{Study 2b. Corrupted-direction rate when the provenance carried into the
+later decision is randomised rather than chosen. Both arms carry two source
+records; only whether one of them is the corrupted memory's differs.}
+\\label{tab:carry}
+\\begin{tabular}{lrr}
+\\toprule
+& corrupted memory's source carried & not carried \\\\
+\\midrule
+""" + "\n".join(carry_rows) + f"""
+\\midrule
+pooled & {kt_}/{nt_} ({100*kt_/nt_:.0f}\\%) & {kc_}/{nc_} ({100*kc_/nc_:.0f}\\%) \\\\
+\\bottomrule
+\\end{{tabular}}
+\\end{{table}}
+""")
+
+# ---- design constants, measured rather than typed ----
+import subprocess
+lens = json.loads(subprocess.run(["npx","tsx","-e","""
+import { lineage } from "./scripts/paper-experiment";
+const c = lineage("clean","memory_73"), d = lineage("drifted","memory_73");
+const t = (a:any[]) => a.find((m)=>m.id==="memory_73").body.length;
+const o = (a:any[]) => a.filter((m)=>m.id!=="memory_73").map((m)=>m.body.length);
+console.log(JSON.stringify({cleanT:t(c), driftT:t(d), oMin:Math.min(...o(d)), oMax:Math.max(...o(d)),
+  oMean:o(d).reduce((x,y)=>x+y,0)/o(d).length}));
+"""], capture_output=True, text=True).stdout.strip().splitlines()[-1])
+mac("BodyMin", lens["oMin"]); mac("BodyMax", lens["oMax"])
+mac("BodyCleanTarget", lens["cleanT"]); mac("BodyDriftTarget", lens["driftT"])
+mac("BodyRatio", f"{lens['cleanT']/lens['oMean']:.2f}")
+
 bad = [k for k in M if not k.isalpha()]
 if bad:
     raise SystemExit(f"invalid LaTeX macro names (control words must be letters only): {bad}")
