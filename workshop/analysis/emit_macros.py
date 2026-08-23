@@ -24,10 +24,22 @@ def cmhtex(strata):
 MODELS = ["claude-opus-5","claude-sonnet-5","claude-haiku-4-5","gpt-5.6-sol","gpt-5.6-terra","gpt-5.6-luna"]
 BACKING = {"simplify_onboarding":["memory_31","memory_86"],"promotional_pricing":["memory_73"],
            "referral_incentive":["memory_57"],"activation_messaging":["memory_91"],"enterprise_sales_assist":["memory_44"]}
-load = lambda p: [json.load(open(f)) for f in glob.glob(p, recursive=True)]
+# resolve every path against the repository root so this runs from any cwd
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.chdir(ROOT)
+
+def load(p, expect=None):
+    rows = [json.load(open(f)) for f in glob.glob(p, recursive=True)]
+    if expect is not None and len(rows) != expect:
+        raise SystemExit(f"{p}: found {len(rows)} episodes, expected {expect}. "
+                         "Refusing to emit macros from an incomplete run.")
+    if not rows:
+        raise SystemExit(f"{p}: no episodes found (cwd={os.getcwd()}). "
+                         "Refusing to emit macros from nothing.")
+    return rows
 
 # ---- Experiment 1 (published data, re-analysed) ---------------------------
-E1 = load("runs/paper/paper-v1/**/*.json")
+E1 = load("runs/paper/paper-v1/**/*.json", 1020)
 mac("ExpOneN", len(E1))
 al = [e for e in E1 if e["target"] in BACKING.get(e["first"]["intended_action"], [])]
 mis = [e for e in E1 if e not in al]
@@ -36,7 +48,7 @@ mac("AlignedK", va); mac("AlignedN", len(al)); mac("MisK", vm); mac("MisN", len(
 mac("MisPct", f"{100*vm/len(mis):.0f}")
 
 # ---- Experiment 3A --------------------------------------------------------
-A = load("workshop/runs/exp3a-v1/**/*.json")
+A = load("workshop/runs/exp3a-v1/**/*.json", 450)
 mac("ThreeAN", len(A))
 cell = lambda r: (sum(1 for e in r if e["scores"]["p2_pricing"]), len(r))
 st_out, bym = [], {}
@@ -72,7 +84,7 @@ o = sum(1 for e in A if e["original_p2_action"]=="promotional_pricing")
 mac("ThreeAOrigPct", f"{100*o/len(A):.0f}" if A else "0")
 
 # ---- Experiment 3B --------------------------------------------------------
-B = load("workshop/runs/exp3b-v1/**/*.json")
+B = load("workshop/runs/exp3b-v1/**/*.json", 300)
 mac("ThreeBN", len(B))
 st=[]
 for m in MODELS:
@@ -102,7 +114,7 @@ mac("ThreeBAllModels", str(sum(1 for m in MODELS
      < cell([e for e in B if e["model"]==m and e["arm"]=="carry-other"])[0])))
 
 # ---- Experiment 4 ---------------------------------------------------------
-C = load("workshop/runs/exp4-v1/**/*.json")
+C = load("workshop/runs/exp4-v1/**/*.json", 600)
 mac("FourN", len(C))
 v = lambda r: (sum(1 for e in r if e["scores"]["verified_73"]), len(r))
 TAG = {"drifted":"Drift","clean-positive":"Pos","clean-neutral":"Neut","clean-negative":"Neg"}
@@ -137,6 +149,20 @@ def c4(a1,a2,tag):
 c4("clean-neutral","clean-negative","NeutNeg"); c4("clean-positive","clean-negative","PosNeg")
 c4("clean-neutral","drifted","NeutDrift"); c4("clean-positive","drifted","PosDrift")
 c4("drifted","clean-negative","DriftNeg")
+# how universal is the suppression?  and does Sonnet's Experiment-1 reversal survive?
+sup = rev = 0
+for m in MODELS:
+    kn,nn = v([e for e in C if e["model"]==m and e["arm"]=="clean-negative"])
+    kd,nd = v([e for e in C if e["model"]==m and e["arm"]=="drifted"])
+    if nn and nd:
+        if kn/nn < kd/nd: sup += 1
+        else: rev += 1
+mac("FourSuppressModels", str(sup)); mac("FourReverseModels", str(rev))
+for m,tag in (("claude-sonnet-5","Sonnet"),("claude-haiku-4-5","Haiku")):
+    kn,nn = v([e for e in C if e["model"]==m and e["arm"]=="clean-negative"])
+    kd,nd = v([e for e in C if e["model"]==m and e["arm"]=="drifted"])
+    mac(f"Four{tag}Neg", f"{kn}/{nn}"); mac(f"Four{tag}Drift", f"{kd}/{nd}")
+    mac(f"Four{tag}Gap", f"{100*(kn/nn - kd/nd):+.0f}")
 
 # ---- Experiment 5 ---------------------------------------------------------
 S = load("workshop/runs/exp5-scores/**/*.json")
@@ -242,6 +268,16 @@ for m in MODELS:
     kt_,nt_ = cell([e for e in B if e["model"]==m and e["arm"]=="carry-target"])
     kc_,nc_ = cell([e for e in B if e["model"]==m and e["arm"]=="carry-other"])
     carry_rows.append(f"{NICE[m]} & {kt_}/{nt_} & {kc_}/{nc_} \\\\")
+# ---- exploratory: allocation under naturally drifted memory ----
+NB = load("workshop/runs/exp5b-v1/**/*.json")
+if NB:
+    k = sum(1 for e in NB if e["scores"]["verified_73"])
+    mac("NatK", k); mac("NatN", len(NB)); mac("NatPct", f"{100*k/len(NB):.0f}")
+    mac("NatPricingIntent", str(sum(1 for e in NB if e["scores"]["intent_is_pricing"])))
+    mac("NatChains", str(len({e["natural_source"] for e in NB})))
+    mac("NatLenMin", str(min(e["natural_body_len"] for e in NB)))
+    mac("NatLenMax", str(max(e["natural_body_len"] for e in NB)))
+
 os.makedirs("workshop/paper", exist_ok=True)
 kt_,nt_ = cell([e for e in B if e["arm"]=="carry-target"]); kc_,nc_ = cell([e for e in B if e["arm"]=="carry-other"])
 open("workshop/paper/tab-carry.tex","w").write(
