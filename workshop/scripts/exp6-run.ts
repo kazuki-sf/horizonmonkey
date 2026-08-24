@@ -121,13 +121,15 @@ async function pool<T>(tasks: (() => Promise<T>)[], width: number) {
 }
 
 const smoke = process.argv.includes("--smoke");
+const only = process.argv.includes("--models") ? process.argv[process.argv.indexOf("--models") + 1].split(",") : null;
+const RUN_MODELS = only ? MODELS.filter((m) => only.some((o) => m.startsWith(o))) : MODELS;
 const N = smoke ? 2 : 25;
 
 const tasks: (() => Promise<unknown>)[] = [];
-for (const w of WORLDS) for (const arm of ARMS) for (const model of MODELS) for (let run = 0; run < N; run++)
+for (const w of WORLDS) for (const arm of ARMS) for (const model of RUN_MODELS) for (let run = 0; run < N; run++)
   tasks.push(() => episode(w, arm, model, run));
 
-console.log(`${VERSION}: ${tasks.length} episodes (${smoke ? "SMOKE" : "registered grid"}), budget ${BUDGET}, first pass only`);
+console.log(`${VERSION}: ${RUN_MODELS.length} models, ${tasks.length} episodes (${smoke ? "SMOKE" : "registered grid"}), budget ${BUDGET}, first pass only`);
 let done = 0;
 const t0 = Date.now();
 pool(tasks.map((t) => async () => {
