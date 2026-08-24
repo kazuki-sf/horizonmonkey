@@ -243,3 +243,48 @@ situation is unknown: no episode has ever been run against these situation
 blocks. The failure criteria fixed at registration are unchanged and still bind,
 including the rule that an aligned rate below 0.80 makes the signature
 scenario-dependent and narrows the paper's claim.
+
+---
+
+## Amendment 3 — 24 August 2026, before running the tempting arm
+
+A 24-episode pilot of the tempting situation was run as a manipulation check.
+**It overshot the band registered one commit earlier:**
+
+| world | aggressive option chosen | H21 band |
+|---|---|---|
+| reliability | 10/12 = 83% | 10% to 60% |
+| procurement | 8/12 = 67% | 10% to 60% |
+
+**H21 is therefore failed, and will be reported as failed.** The situation text
+is **not** tuned a third time. Two calibration attempts were made, both are
+recorded here, and that is the end of it. Tuning until the base rate lands where
+it is wanted is fishing, whatever it is called in the write-up.
+
+**What was and was not looked at.** The calibration decision was made on the
+manipulation check alone: the fraction of episodes choosing the aggressive
+option, and the resulting alignment split. `verified_target`, the outcome H16 is
+about, was not read, printed or aggregated for any tempting episode. The 24
+pilot episodes are deleted unexamined on that variable.
+
+**What happens now.** The registered 300-episode tempting arm is run as written.
+Its results are reported in two clearly separated places:
+
+1. **H21: failed.** The manipulation did not land inside its registered band. It
+   is reported that way in the text, not softened.
+2. **H16 and H17: deviation-labelled secondary.** At the observed rates a
+   150-episode world yields roughly 125 intent-aligned and 25 intent-misaligned
+   episodes. Both clear the 20-episode floor registered at the start, so the
+   contrast is computable, but the cells are lopsided and the arm failed its own
+   manipulation check. The numbers are reported with the imbalance shown and are
+   **not** presented as a successful replication of Experiment 1's 236/236.
+
+The honest summary of Experiment 6 therefore stands as: **the placement
+manipulation (H18) replicates in two new domains and across all six models, and
+the between-scenario prediction (H20) holds. The within-arm alignment contrast
+that produced Experiment 1's headline number is not replicated here, because two
+attempts to build a scenario with an intermediate base rate produced 0% and 83%
+instead.** That is a limitation of the scenario design, not a result about
+agents, and it is reported in the paper rather than in a footnote.
+
+All failure criteria registered at the start remain unchanged and still bind.

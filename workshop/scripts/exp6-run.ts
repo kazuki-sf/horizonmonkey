@@ -12,7 +12,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { loadEnvLocal } from "../../scripts/llm-probe-shared";
-import { WORLDS, lineage6, sources6, corruptedIn, situation6, schema6, type World, type Arm, type Mem } from "./exp6-worlds";
+import { WORLDS, lineage6, sources6, corruptedIn, situation6, schema6, type World, type Arm, type Mem, type Variant } from "./exp6-worlds";
 
 loadEnvLocal();
 
@@ -84,17 +84,17 @@ function score(w: World, arm: Arm, a: Answer) {
   };
 }
 
-async function episode(w: World, arm: Arm, model: string, run: number) {
-  const name = `${w.key}__${arm}__${model}__${run}`;
+async function episode(w: World, arm: Arm, model: string, run: number, variant: Variant = "base") {
+  const name = `${w.key}__${arm}${variant === "tempting" ? "-tempting" : ""}__${model}__${run}`;
   if (existsSync(`${OUT}/${name}.json`)) return { skipped: true } as const;
-  const rnd = mulberry32(hash(`${VERSION}|${w.key}|${arm}|${model}|${run}`));
+  const rnd = mulberry32(hash(`${VERSION}|${w.key}|${arm}|${variant}|${model}|${run}`));
   const mems: Mem[] = shuffled(lineage6(w, arm), rnd);
-  const user = situation6(w, mems, BUDGET);
+  const user = situation6(w, mems, BUDGET, variant);
   try {
     const { text, usage } = await ask(model, w.system, user, schema6(w));
     const answer = JSON.parse(text) as Answer;
     const rec = {
-      version: VERSION, world: w.key, arm, model, run, budget: BUDGET,
+      version: VERSION, world: w.key, arm, variant, model, run, budget: BUDGET,
       order: mems.map((m) => m.id), answer, usage,
       scored: score(w, arm, answer),
       sources_available: Object.keys(sources6(w, arm)),
@@ -106,7 +106,7 @@ async function episode(w: World, arm: Arm, model: string, run: number) {
     // Pre-registered: errors are recorded and counted, never silently dropped.
     mkdirSync(OUT, { recursive: true });
     writeFileSync(`${OUT}/${name}.ERROR.json`, JSON.stringify({
-      version: VERSION, world: w.key, arm, model, run, error: String(e).slice(0, 800),
+      version: VERSION, world: w.key, arm, variant, model, run, error: String(e).slice(0, 800),
     }, null, 1));
     return { err: true } as const;
   }
@@ -123,13 +123,15 @@ async function pool<T>(tasks: (() => Promise<T>)[], width: number) {
 const smoke = process.argv.includes("--smoke");
 const only = process.argv.includes("--models") ? process.argv[process.argv.indexOf("--models") + 1].split(",") : null;
 const RUN_MODELS = only ? MODELS.filter((m) => only.some((o) => m.startsWith(o))) : MODELS;
+const VARIANT: Variant = process.argv.includes("--tempting") ? "tempting" : "base";
+const RUN_ARMS: Arm[] = VARIANT === "tempting" ? ["drifted"] : ARMS;   // Amendment 2: tempting registers the drifted arm only
 const N = smoke ? 2 : 25;
 
 const tasks: (() => Promise<unknown>)[] = [];
-for (const w of WORLDS) for (const arm of ARMS) for (const model of RUN_MODELS) for (let run = 0; run < N; run++)
-  tasks.push(() => episode(w, arm, model, run));
+for (const w of WORLDS) for (const arm of RUN_ARMS) for (const model of RUN_MODELS) for (let run = 0; run < N; run++)
+  tasks.push(() => episode(w, arm, model, run, VARIANT));
 
-console.log(`${VERSION}: ${RUN_MODELS.length} models, ${tasks.length} episodes (${smoke ? "SMOKE" : "registered grid"}), budget ${BUDGET}, first pass only`);
+console.log(`${VERSION}: ${RUN_MODELS.length} models, ${tasks.length} episodes (${VARIANT}, ${smoke ? "SMOKE" : "registered grid"}), budget ${BUDGET}, first pass only`);
 let done = 0;
 const t0 = Date.now();
 pool(tasks.map((t) => async () => {
