@@ -3,9 +3,11 @@ import json, glob, sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 from stats import wilson
 
-# panel (a): Study 3, intent-misaligned stratum
+# panel (a): the PRE-REGISTERED RANDOMISED marginal contrast over all episodes.
+# The intent-misaligned subset conditions on a post-treatment variable, so it
+# belongs in the table as descriptive evidence, not in the headline figure.
 C = [json.load(open(f)) for f in glob.glob("workshop/runs/exp4-v1/**/*.json", recursive=True)]
-mis = lambda a: [e for e in C if e["arm"]==a and not e["scores"]["intent_is_pricing"]]
+mis = lambda a: [e for e in C if e["arm"]==a]
 ARMS = [("clean-negative","true caveat"),("drifted","silence"),
         ("clean-neutral","irrelevant hedge"),("clean-positive","positive note")]
 bars = []
@@ -56,12 +58,12 @@ fig = r"""\begin{figure}[t]
 \addlegendentry{scope restriction}
 \end{axis}
 \end{tikzpicture}
-\caption{\textbf{(a)} Verification of the corrupted memory by what its body
-carries, restricted to episodes where the agent does not intend the action that
-memory backs (Study 3). The true caveat suppresses verification; a qualifier
+\caption{\textbf{(a)} Verification of the target memory by what its body
+carries, over all episodes of the randomised qualifier experiment
+(\\S\\ref{sec:qualifier}, pre-registered marginal contrast). The true caveat suppresses verification; a qualifier
 that raises a question without answering it raises it; silence sits between.
 \textbf{(b)} Survival of each qualifier type through six consolidation
-generations (Study 4); x-axis is session note, consolidation, then
+generations (\\S\\ref{sec:drift}); x-axis is session note, consolidation, then
 re-summarisation targets of 130, 110, 90 and 70 characters. Scope restrictions
 erode; quantified negative outcomes largely do not. Bars are Wilson 95\%
 intervals.}
