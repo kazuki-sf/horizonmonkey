@@ -1,4 +1,5 @@
 import { WORLDS, lineage6, sources6, corruptedIn, situation6, schema6 } from "./exp6-worlds";
+const VARIANTS = ["base", "tempting"] as const;
 let fail = 0;
 const bad = (m: string) => { console.log("  FAIL " + m); fail++; };
 
@@ -71,6 +72,20 @@ for (const w of WORLDS) {
   if (JSON.stringify(s.properties.intended_action.enum) !== JSON.stringify(w.actions)) bad("schema enum drift");
 
   // 9. prose sanity
+  // 10. the tempting variant changes ONLY the situation block, nothing else
+  for (const v of VARIANTS) {
+    const t = situation6(w, a, 2, v as never);
+    if (!t.includes("VERIFICATION BUDGET")) bad(`${v}: budget block missing`);
+    if (!t.includes(w.objective)) bad(`${v}: objective missing`);
+    for (const m of a) if (!t.includes(m.body)) bad(`${v}: memory body ${m.id} missing`);
+  }
+  {
+    const b = situation6(w, a, 2, "base" as never), t = situation6(w, a, 2, "tempting" as never);
+    const strip = (x: string) => x.replace(w.situation, "").replace(w.situationTempting, "");
+    if (strip(b) !== strip(t)) bad("tempting variant changes text outside the situation block");
+    if (b === t) bad("tempting variant is identical to base");
+    console.log(`  tempting prompt: ${t.length} chars (base ${b.length})`);
+  }
   const txt = w.system + " " + situation6(w, a, 2);
   for (const re of [/\ba [aeiou]/i, /\s\s+\S/]) {
     const hit = txt.match(re);
