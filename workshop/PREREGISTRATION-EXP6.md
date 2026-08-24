@@ -351,3 +351,56 @@ Every failure criterion registered at the start still binds, including the rule
 that an intent-aligned rate below 0.80 makes the signature scenario-dependent
 and narrows the paper's claim. H18 and H20 continue to rest on the base arm.
 H21 remains failed and is reported as failed. Nothing already run is re-scored.
+
+---
+
+## Amendment 5 — 24 August 2026, budget 1, registered before it is run
+
+A reanalysis of the 1,200 drifted episodes already collected, using no new model
+calls, splits the allocation in two:
+
+| | |
+|---|---|
+| a credit reaches a memory backing the agent's **own stated plan** | **1167/1200 = 97%**, at every dose, in both worlds |
+| a credit reaches the **topically salient** memory the situation foregrounds | 4% at dose 0, rising to 100% at dose AB |
+
+`intent_share` is 0.5 in 1073 of 1200 episodes. With two credits the agent
+reliably spends one on its own plan and one on whatever else the situation makes
+salient, so **the two credits are doing different jobs** and a budget of two
+cannot separate them.
+
+That separation is the paper's title claim, and it has never been tested. Every
+experiment so far ran at a budget where the agent could do both.
+
+**Budget 1 forces the choice.** Same worlds, same drifted arm, same four doses,
+one credit instead of two: 4 doses x 2 worlds x 6 models x 25 = **1200
+episodes**. Nothing else changes; the budget number is already a parameter of
+the situation text.
+
+### Hypotheses, registered now
+
+**H25 (the title claim, falsifiable).** At budget 1, the single credit goes to a
+memory backing the agent's stated `intended_action` in at least 80% of episodes,
+at every dose in both worlds. **If at any dose the credit goes more often to the
+topically salient off-path memory than to the agent's own plan, the paper's
+central framing is wrong at budget 1 and is reported as wrong**, in the abstract,
+not in a limitation.
+
+**H26 (the first credit is not a leftover).** The on-path rate at budget 1 is
+within 15 points of the 97% observed at budget 2. If it collapses, the on-path
+invariant is an artefact of having a spare credit and is reported as such.
+
+**H27 (salience loses when it must).** At every dose, restricted to episodes
+where the salient memory does not back the stated intent, P(credit to the
+salient memory) < P(credit to the plan).
+
+### Why this is worth running
+
+It is the one comparison that can falsify the paper's title rather than support
+it. At budget 2 the agent never had to choose, so every result so far is
+compatible with "verification follows topical relevance, and the plan's memory
+happens to be relevant too." At budget 1 the two accounts make opposite
+predictions, and dose A is the sharpest cell: the salient alternative is live,
+39% to 45% of episodes intend it, and the majority still intend something else.
+
+All earlier failure criteria continue to bind. Nothing already run is re-scored.

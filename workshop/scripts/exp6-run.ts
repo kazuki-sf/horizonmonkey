@@ -19,7 +19,7 @@ loadEnvLocal();
 export const VERSION = "exp6-v1";
 const MODELS = ["claude-opus-5","claude-sonnet-5","claude-haiku-4-5","gpt-5.6-sol","gpt-5.6-terra","gpt-5.6-luna"];
 const ARMS: Arm[] = ["drifted", "drifted-swap"];
-const BUDGET = 2;
+const BUDGET = process.argv.includes("--budget") ? Number(process.argv[process.argv.indexOf("--budget") + 1]) : 2;
 const OUT = "runs/exp6";
 
 // --- deterministic RNG, same construction as Experiment 1 -------------------
@@ -85,10 +85,10 @@ function score(w: World, arm: Arm, a: Answer) {
 }
 
 async function episode(w: World, arm: Arm, model: string, run: number, variant: Variant = "base", dose: Dose | null = null) {
-  const tag = dose ? `-dose${dose}` : (variant === "tempting" ? "-tempting" : "");
+  const tag = (dose ? `-dose${dose}` : (variant === "tempting" ? "-tempting" : "")) + (BUDGET !== 2 ? `-b${BUDGET}` : "");
   const name = `${w.key}__${arm}${tag}__${model}__${run}`;
   if (existsSync(`${OUT}/${name}.json`)) return { skipped: true } as const;
-  const rnd = mulberry32(hash(`${VERSION}|${w.key}|${arm}|${dose ?? variant}|${model}|${run}`));
+  const rnd = mulberry32(hash(`${VERSION}|${w.key}|${arm}|${dose ?? variant}|b${BUDGET}|${model}|${run}`));
   const mems: Mem[] = shuffled(lineage6(w, arm), rnd);
   const user = dose ? situationDose(w, mems, BUDGET, dose) : situation6(w, mems, BUDGET, variant);
   try {
