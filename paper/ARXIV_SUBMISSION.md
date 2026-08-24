@@ -1,5 +1,20 @@
 # arXiv submission — Verification Goes Where the Agent Is Already Looking
 
+> **Outcome (24 Aug 2026).** arXiv moderation declined the submission:
+> *"your submission would benefit from additional review and revision that is
+> outside of the services we provide."* No defect was identified — this is a
+> screening decision, not a review. arXiv will reconsider on appeal only once the
+> work is published in a conventional journal, and **only one appeal is allowed**
+> ("when an appeal is denied by appellate moderators, no further appeal is
+> possible"), so no appeal has been filed and none should be until a peer-review
+> decision is in hand.
+>
+> The paper is published instead on **Zenodo**:
+> [10.5281/zenodo.22084498](https://doi.org/10.5281/zenodo.22084498) (all
+> versions) — v1 is `10.5281/zenodo.22084500`.
+>
+> Everything below is kept as the record of what was submitted and verified.
+
 **Status: v1 submitted 23 Aug 2026 (`submit/7984035`, cs.IR). This runbook
 describes the replacement, which adds Experiments 3–5 and withdraws two claims
 v1 made.** Replace the files, and update the Abstract and Comments fields with
@@ -11,7 +26,7 @@ them — both changed.
 |---|---|---|
 | experiments | 2 | 5 |
 | hypotheses | 8 (H1–H8) | 17 (H1–H15) |
-| pages | 11 | 18 |
+| pages | 11 | 19 |
 | tables / figures | 3 / 1 | 4 / 1 |
 
 Three v1 claims did not survive their own follow-up experiments and are
@@ -43,8 +58,8 @@ finish unless the extracted tarball compiles. An earlier hard-coded list silentl
 omitted three body files and a macro file and would have shipped a tarball that
 could not build; that is why the check exists.
 
-Verified on the shipped bundle: compiles standalone, **18 pages, 14 references,
-zero undefined references**. `paper.bbl` holds 14 `\bibitem`s and no `\bibdata`,
+Verified on the shipped bundle: compiles standalone, **19 pages, 18 references,
+zero undefined references**. `paper.bbl` holds 18 `\bibitem`s and no `\bibdata`,
 so it typesets without `refs.bib`.
 
 On arXiv's **Review Files** step `paper.bbl` is pre-ticked for deletion. Untick
@@ -76,7 +91,7 @@ against `figures/macros*.tex` and against the compiled PDF.
 
 **Comments** — **CHANGED**
 ```
-18 pages, 1 figure, 4 tables. Five pre-registered experiments; all episode
+19 pages, 1 figure, 4 tables. Five pre-registered experiments; all episode
 data and analysis code released at https://github.com/kazuki-sf/horizonmonkey
 ```
 

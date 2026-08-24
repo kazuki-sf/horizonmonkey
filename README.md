@@ -3,6 +3,8 @@
 **Semantic chaos engineering for long-horizon agents.**
 *Break the agent's beliefs before reality does.*
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22084498.svg)](https://doi.org/10.5281/zenodo.22084498)
+
 **▶ Demo — `npm install && npm run dev`, then http://localhost:3579**
 Pick a fault, press run, and watch the recorded trace replay step by step. Pure
 deterministic simulation: no API keys, no model calls, nothing to configure.
@@ -35,8 +37,8 @@ is a Coframe-style growth agent; that is the **example**, not the product.
 ## Paper
 
 **Verification Goes Where the Agent Is Already Looking: Intent-Aligned Triage of
-Inherited Memory Under Budget** — submitted to arXiv (cs.IR); link added on
-announcement.
+Inherited Memory Under Budget** —
+[10.5281/zenodo.22084498](https://doi.org/10.5281/zenodo.22084498)
 
 A long-horizon agent inherits memory it did not write and cannot check all of it.
 The paper gives six production models a budget of provenance lookups, silently
@@ -55,6 +57,22 @@ intends, not to the belief that is most costly if wrong. A second experiment
 
 The paper is a separate study *built on* this harness: it uses the caveat-omission
 fault against real models, where the demo below uses the deterministic simulation.
+
+### Cite
+
+```bibtex
+@misc{nakayashiki2026verification,
+  title  = {Verification Goes Where the Agent Is Already Looking:
+            Intent-Aligned Triage of Inherited Memory Under Budget},
+  author = {Nakayashiki, Kazuki},
+  year   = {2026},
+  doi    = {10.5281/zenodo.22084498},
+  url    = {https://doi.org/10.5281/zenodo.22084498},
+  note   = {Zenodo}
+}
+```
+
+The DOI above resolves to the latest version; `10.5281/zenodo.22084500` pins v1.
 
 ---
 
