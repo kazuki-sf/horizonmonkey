@@ -60,10 +60,10 @@ fig = r"""\begin{figure}[t]
 \end{tikzpicture}
 \caption{\textbf{(a)} Verification of the target memory by what its body
 carries, over all episodes of the randomised qualifier experiment
-(\\S\\ref{sec:qualifier}, pre-registered marginal contrast). The true caveat suppresses verification; a qualifier
+(\S\ref{sec:qualifier}, pre-registered marginal contrast). The true caveat suppresses verification; a qualifier
 that raises a question without answering it raises it; silence sits between.
 \textbf{(b)} Survival of each qualifier type through six consolidation
-generations (\\S\\ref{sec:drift}); x-axis is session note, consolidation, then
+generations (\S\ref{sec:drift}); x-axis is session note, consolidation, then
 re-summarisation targets of 130, 110, 90 and 70 characters. Scope restrictions
 erode; quantified negative outcomes largely do not. Bars are Wilson 95\%
 intervals.}
