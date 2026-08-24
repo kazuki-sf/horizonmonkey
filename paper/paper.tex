@@ -84,7 +84,8 @@ content at all appears in \FivePurelyPositive{} chain-generations.
 This matters for how the rest of the paper should be read. The corruption we
 install by hand --- a lesson stripped of its negative content --- is a real
 failure mode and the one that isolates the allocation question cleanly, but it
-is not what benign compression produces. Experiments 1--4 establish what an
+is not what the benign consolidation process we tested produces.
+Experiments 1--4 establish what an
 agent does when such a belief is present; they are not evidence that
 summarisation routinely creates one.
 
@@ -342,8 +343,8 @@ Wilson 95\% intervals; pairwise contrasts use two-sided Fisher exact tests.
 Long-horizon reliability work has concentrated on whether agents can detect
 corrupted state, and on how to spend verification compute across candidate
 outputs. Between the two sits a quieter decision that our measurements suggest
-does much of the work: with limited capacity, an agent verifies where it
-already intends to act. On a task where nearly every episode spent its full
+does much of the work: with limited capacity, verification concentrates where
+the agent already intends to act. On a task where nearly every episode spent its full
 budget (\FullBudgetK{} of \TotalEpisodes{} in Experiment 1), reliability
 differences came almost entirely from \emph{direction} --- whether scarce
 attention reached the belief that was silently wrong, or only the beliefs
@@ -374,12 +375,12 @@ Put the lessons consolidation does produce in front of the agent and
 verification sits at \NatPct\%, next to an intact caveat rather than next to
 our hand-built drift, because the surviving number keeps it off the action. So
 the allocation failure is established and its usual motivating story is not:
-something other than ordinary summarisation has to produce the corrupted belief
-for an agent to walk past it.
+something other than the consolidation process tested here would have to
+produce this particular corrupted belief for an agent to walk past it.
 
-What follows for systems is not a better-behaved agent. Every model we tested
-allocates toward its current plan, and doing so is correct for the decision in
-front of it. The gap is architectural: retrieval ranks records by relevance to
+What follows for systems is not a better-behaved agent. Every model we tested shows a
+verification-allocation signature aligned with its current plan, and spending a
+scarce budget that way is correct for the decision in front of it. The gap is architectural: retrieval ranks records by relevance to
 the plan, and nothing ranks them by what it would cost to be wrong. A
 persistent-memory system needs a verification scheduler alongside its retriever,
 with the lineage depth, scope breadth, and last-verified time to run it.
@@ -390,10 +391,21 @@ with the lineage depth, scope breadth, and last-verified time to run it.
 \section{Scenario text}
 The complete system prompt, memory lineages for both corruption targets, the
 hidden source records, and the pre-registered scoring rules are released
-verbatim in the repository, as
-\path{runs/paper/preregistration.md} (Experiment~1) and
-\path{runs/paper-phase2/preregistration.md} (Experiment~2). Both are
-byte-identical to what every model received, and both were committed before
-the first model call of their respective experiment.
+verbatim in the repository. Five experiments are covered by \emph{three}
+pre-registration documents, each committed before the first model call of the
+experiments it covers:
+
+\begin{itemize}\itemsep1pt
+\item \path{runs/paper/preregistration.md} --- Experiment 1 (H1--H5).
+\item \path{runs/paper-phase2/preregistration.md} --- Experiment 2 (H6--H8).
+\item \path{workshop/PREREGISTRATION.md} --- Experiments 3, 4 and 5 (H9--H15)
+  in a single document, with the two amendments made while the relevant
+  experiment's episode count was zero, and the record of H15 becoming
+  unrunnable.
+\end{itemize}
+
+The scenario text is byte-identical to what every model received. The first two
+documents are unmodified since their commits; the third carries its amendments
+in-file, with commit history as the audit trail.
 
 \end{document}
