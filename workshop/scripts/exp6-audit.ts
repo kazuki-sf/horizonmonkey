@@ -93,5 +93,27 @@ for (const w of WORLDS) {
   }
   console.log(`  situation+memory prompt: ${situation6(w, a, 2).length} chars`);
 }
-console.log(fail ? `\n*** ${fail} FAILURES ***` : "\nall structural checks pass");
-process.exit(fail ? 1 : 0);
+console.log(fail ? `\n*** ${fail} STRUCTURAL FAILURES ***` : "\nall structural checks pass");
+
+// --- Amendment 4: the dose series must reproduce its endpoints exactly ------
+import { DOSES, situationFor, situationDose } from "./exp6-worlds";
+console.log("\n=== dose series ===");
+let dfail = 0;
+for (const w of WORLDS) {
+  if (situationFor(w, "0") !== w.situation) { console.log(`  FAIL ${w.key}: dose 0 != registered base`); dfail++; }
+  if (situationFor(w, "AB") !== w.situationTempting) { console.log(`  FAIL ${w.key}: dose AB != registered tempting`); dfail++; }
+  const texts = DOSES.map((d) => situationFor(w, d));
+  if (new Set(texts).size !== 4) { console.log(`  FAIL ${w.key}: doses are not four distinct texts`); dfail++; }
+  // each intermediate must differ from base in exactly one bullet
+  for (const d of ["A", "B"] as const) {
+    const a = w.situation.split("\n"), c = situationFor(w, d).split("\n");
+    const changed = a.filter((l, i) => l !== c[i]).length + Math.abs(a.length - c.length);
+    if (changed === 0) { console.log(`  FAIL ${w.key}/${d}: identical to base`); dfail++; }
+  }
+  const full = DOSES.map((d) => situationDose(w, lineage6(w, "drifted"), 2, d));
+  if (new Set(full).size !== 4) { console.log(`  FAIL ${w.key}: full prompts collide across doses`); dfail++; }
+  const ok = situationFor(w, "0") === w.situation && situationFor(w, "AB") === w.situationTempting;
+  console.log(`  ${w.key}: dose lengths ${texts.map((t) => t.length).join(", ")}  endpoints byte-identical: ${ok}`);
+}
+console.log(dfail ? `  *** ${dfail} dose failures ***` : "  dose series checks pass");
+process.exit(fail + dfail ? 1 : 0);

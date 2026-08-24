@@ -288,3 +288,66 @@ instead.** That is a limitation of the scenario design, not a result about
 agents, and it is reported in the paper rather than in a footnote.
 
 All failure criteria registered at the start remain unchanged and still bind.
+
+---
+
+## Amendment 4 — 24 August 2026, a dose series, registered before its middle is run
+
+Amendment 3 committed to no third tuning of the situation text, and that
+commitment holds: **no new situation text is written here.** What follows is a
+different design, not another attempt at the same one.
+
+`situationTempting` differs from `situation` by exactly two substituted bullets.
+Those two clauses are treated as a two-level factor and the four cells are run
+as a **dose series**, derived mechanically from the two strings already
+registered:
+
+| dose | reliability | procurement |
+|---|---|---|
+| **0** | base | base |
+| **A** | + degradation confined to the primary region | + incumbent refused to reopen price |
+| **B** | + release carries an unrevertable security patch | + low-cost quote meets the mandate alone |
+| **AB** | both (= `situationTempting`) | both (= `situationTempting`) |
+
+`exp6-audit.ts` asserts that dose 0 reproduces `w.situation` and dose AB
+reproduces `w.situationTempting` **byte for byte**, so the 300 base-drifted and
+300 tempting-drifted episodes already run are the endpoints of this series and
+are reused unchanged. Only doses A and B are new: 2 doses x 2 worlds x 6 models
+x 25 = **600 episodes**.
+
+This is not tuning because the whole series is fixed before any of its middle is
+run, and because the intermediate texts are not authored to hit a target rate;
+they are the two halves of a decomposition whose endpoints are already measured
+at 0% and 81%.
+
+### Hypotheses, registered now
+
+**H22 (dose-response).** In each world, intent-misaligned verification of the
+corrupted memory is non-decreasing across doses ordered 0, then A and B, then
+AB. If the ordering is not monotone, the salience account of the off-path rate
+is reported as not holding.
+
+**H23 (ceiling invariance).** At every dose in every world, intent-aligned
+verification is >= 0.90. This is the paper's core claim tested parametrically
+within a scenario rather than across scenarios: however salient the alternative
+becomes, the memory backing the agent's own intent is checked, and only the
+off-path rate moves. **If H23 fails at any dose, the claim is falsified and
+reported as falsified.**
+
+**H24 (where H16 is testable, declared before the data exists).** A dose
+qualifies if, in that world, both alignment cells contain at least 20 episodes
+**and** intent-misaligned verification is strictly between 20% and 80%. H16 is
+evaluated at **every** qualifying dose and at no other. If no dose qualifies in
+either world, H16 is reported as unreplicated by Experiment 6, and H22 and H23
+are the result.
+
+H24 exists so that the location of the H16 test is fixed in advance instead of
+chosen after seeing which cell split looks best. Reporting is over all
+qualifying doses, not the most favourable one.
+
+### What does not change
+
+Every failure criterion registered at the start still binds, including the rule
+that an intent-aligned rate below 0.80 makes the signature scenario-dependent
+and narrows the paper's claim. H18 and H20 continue to rest on the base arm.
+H21 remains failed and is reported as failed. Nothing already run is re-scored.

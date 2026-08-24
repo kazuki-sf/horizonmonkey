@@ -269,3 +269,38 @@ export const schema6 = (w: World) =>
       confidence: { type: "integer" },
     },
   }) as const;
+
+// ---------------------------------------------------------------------------
+// Amendment 4 — dose series.
+//
+// situationTempting differs from situation by exactly two substituted bullets.
+// Rather than write new text, the intermediate doses are derived from the two
+// strings already registered, so dose "0" and dose "AB" are byte-identical to
+// them by construction and the episodes already run at those doses stay valid.
+// ---------------------------------------------------------------------------
+export type Dose = "0" | "A" | "B" | "AB";
+export const DOSES: Dose[] = ["0", "A", "B", "AB"];
+
+const MARKER = "Three things are happening at once:";
+
+function split(sit: string) {
+  const i = sit.indexOf(MARKER);
+  if (i < 0) throw new Error("situation marker not found");
+  const head = sit.slice(0, i + MARKER.length);
+  const rest = sit.slice(i + MARKER.length);
+  const j = rest.indexOf("\n\n");
+  const body = rest.slice(0, j);
+  const foot = rest.slice(j);
+  const bullets = body.split(/\n(?=\s+·)/).filter((x) => x.length);
+  return { head, bullets, foot };
+}
+
+export function situationFor(w: World, dose: Dose): string {
+  const b = split(w.situation), t = split(w.situationTempting);
+  if (b.bullets.length !== t.bullets.length) throw new Error("bullet count mismatch");
+  const use = (i: number) => dose === "AB" || (dose === "A" && i === 0) || (dose === "B" && i === 1);
+  return b.head + "\n" + b.bullets.map((x, i) => (use(i) ? t.bullets[i] : x)).join("\n") + b.foot;
+}
+
+export const situationDose = (w: World, mems: Mem[], budget: number, dose: Dose) =>
+  situation6(w, mems, budget, "base").replace(w.situation, situationFor(w, dose));
