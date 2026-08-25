@@ -27,18 +27,27 @@ this is not the confound Experiment 8 was run to find.
 ## The claim that survives
 
 **A naturally consolidated memory is verified far less often than a
-hand-stripped one of the same length, and this is not because the agent has
-already ruled the action out.**
+hand-stripped one of the same length.** That is the randomised marginal
+contrast and it is the result: −30.0 points, −26.0 in the sensitivity run.
+
+Everything that follows in this section is **descriptive, not causal**. Intent
+is measured after treatment and is a candidate mediator, so conditioning on it
+does not identify anything; the analyses below say only that the gap is not
+arithmetically absorbed by the observed intent split, which is weaker than
+"not mediated by intent" and is not a claim this design can support.
 
 Among the 122 `hand-drift` episodes that did *not* plan promotional pricing —
 episodes where the agent had ruled the action out exactly as in the natural
 arms — verification is **63/122 = 51.6% [43, 60]**, against `natural-padded`
-30.7%. The gap conditional on intent is **−21.0 points**, CMH χ² = 20.2,
-p = 7.1e−06. Intent accounts for 9 of the 30 points; 21 survive it.
+30.7%. The gap within that stratum is **−21.0 points**, CMH χ² = 20.2, p = 7.1e−06.
+Descriptively, 9 of the 30 points coincide with the intent split and 21 do not.
+Post-treatment stratification, so no causal weight is placed on it.
 
 Stronger still: three of the six models — `claude-opus-5`, `claude-sonnet-5`,
 `gpt-5.6-luna` — plan promotional pricing **0/100 times, in all four arms**.
-Intent is a constant there and can mediate nothing. Restricted to those three
+Intent has no variance there, so it cannot account for a difference by any
+mechanism — this is the one part of the section that does not depend on
+conditioning on a post-treatment variable. Restricted to those three
 (n = 300): natural 24.0%, natural-padded 22.7%, hand-drift 48.0%, intact
 25.3%. The H41 analogue is **−25.3 points, 84% of the full effect, with the
 proposed explanation held at zero.** `claude-opus-5` alone swings 0/25 to
@@ -68,17 +77,17 @@ indicator being used to explain the arm effect.
 **And Experiment 5b's number is not withdrawn.** The previous version withdrew
 "22% against 58%" while simultaneously reporting that H42 — which is that
 comparison — passed. Recomputed from source: `exp5b-v1` gives 33/150 = 22.0%
-and `exp4-v1` `drifted` gives 87/150 = 58.0%. The number is correct, and
-Experiment 9 now makes it confirmatory rather than exploratory: 22.7% against
-60.7% (H42, −38.0), surviving the length control (−30.0) and surviving
-conditioning on intent (−21.0).
+and `exp4-v1` `drifted` gives 87/150 = 58.0%. The number is correct. **Experiment 5b remains exploratory**; the accurate
+statement is that *an exploratory Experiment-5b observation was subsequently
+reproduced in pre-registered Experiment 9* — 22.7% against 60.7% (H42, −38.0),
+and it survives the length control (−30.0).
 
 **What is withdrawn is one interpretation, not the number:** that a
 consolidated body is stealthier *than the original*. It is not.
 `natural-padded` at 30.7% sits on top of `intact` at 24.0%, intervals
 overlapping — above it, not below. H44 passes on a bare sign with no
-registered threshold, and at −6.7 points it is below the reproducibility floor
-measured below. It must not be quoted as an effect.
+registered threshold. At −6.7 points it sits inside the run-to-run variability
+measured below and has not been replicated, so it must not be interpreted.
 
 ## A defect in my own padding, disclosed
 
@@ -102,7 +111,7 @@ rate from those 18 gave −48.2 points, which is a model-composition artefact an
 is recorded here only so the number is not mistaken for a result if it surfaces
 in a log. The 18 files are kept and superseded by the completed run.
 
-## The sensitivity run, and an empirical reproducibility floor
+## The sensitivity run, and a measurement of run-to-run variability
 
 The punctuation fix ran as a separate 150-episode arm, 0 errors, 0 run-ons.
 It leaves the result standing: **34.7% [28, 43] against `hand-drift`'s 60.7%,
@@ -113,7 +122,8 @@ H41.
 The run also produced something more useful than a sensitivity check. Only 23
 of the 150 bodies needed the fix; **the other 127 received a byte-identical
 prompt**, making that run a direct replication of the registered arm. It gives
-this paper a measured reproducibility floor it did not previously have:
+this paper a direct measurement of its own run-to-run variability, which it
+did not previously have:
 
 - **32 of 127 episodes, 25.2%, flip outcome on an identical prompt.** Exact
   McNemar 20 gained against 12 lost, p = 0.215.
@@ -121,12 +131,16 @@ this paper a measured reproducibility floor it did not previously have:
 - Per model the flip rate ranges from 8.7% (`claude-haiku-4-5`, `claude-opus-5`)
   to 42.1% (`claude-sonnet-5`).
 
-**Nothing below about 10 points should be quoted as an effect anywhere in this
-paper.** That disqualifies three numbers, one of them a registered hypothesis:
-Experiment 9's H44 (−6.7), the paired punctuation contrast (−8.7), and it
-confirms Experiment 8's H36 null (−3.3) as a null rather than a small effect.
-Everything the paper actually argues from — Experiment 7's +84.7, Experiment
-8's −46.0, Experiment 9's −30.0, −26.0, −25.3 and −21.0 — is far above it.
+This is **not** a universal threshold below which effects are zero, and it must
+not be quoted as one. What it establishes is that this protocol carries
+material episode-level stochastic variability, and that **small effects here
+require independent replication before they are interpreted at all.** Three
+numbers in this paper fall in that range and none of them has been replicated:
+Experiment 9's H44 (−6.7, a registered hypothesis), the paired punctuation
+contrast (−8.7), and Experiment 8's H36 (−3.3). The effects the paper argues
+from — +84.7, −46.0, −30.0, −26.0 — are an order of magnitude clear of the
+between-run drift observed here, though that is an argument about magnitude,
+not a significance test.
 
 ## The register confound: the audit's evidence for it does not hold, but it is still live
 
@@ -138,9 +152,9 @@ put the same body in two forms.
 
 The sensitivity run does put the same body in two forms. Taking those same 23
 episodes and changing nothing but a full stop before the filler moves
-verification **−8.7 points, exact McNemar p = 0.774** — below the floor
-measured above, in the opposite direction to the audit's inference, and not
-distinguishable from noise. **Punctuation does not move verification.**
+verification **−8.7 points, exact McNemar p = 0.774** — inside the run-to-run
+variability measured above, in the opposite direction to the audit's inference,
+and not distinguishable from noise on a paired test. **Punctuation does not move verification.**
 
 The broader register objection nonetheless stands, and the previous version's
 dismissal of it remains void. Telegraphic note against fluent sentence is a
@@ -164,10 +178,10 @@ disjoint seeds, with no shared response strings:
 
 - **Register is not separated from provenance.** Telegraphic note against
   fluent sentence. This is the first-order limitation, not the last.
-- **H44 is below the measured reproducibility floor** (−6.7 against a 25.2%
+- **H44 is inside the measured run-to-run variability** (−6.7 against a 25.2%
   per-episode flip rate and a +6.3 point between-run drift on identical
-  prompts). It passes as a registered sign test and must not be quoted as an
-  effect.
+  prompts) and has not been replicated. It passes as a registered sign test and
+  is not interpreted.
 - **Six generations.** Whether the constraint survives twenty is untested.
 - **One scenario, one constraint.** Experiment 6 established the allocation
   result across two worlds and 16 models; this chain result has not been.
