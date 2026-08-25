@@ -89,6 +89,17 @@ put("SixWorstOnPathPct", f"{100*lo:.1f}")
 put("SixWorstOnPathModel", min(per, key=lambda m: per[m][0] / per[m][1]).split("/")[-1])
 al2 = [r for r in drift if bud(r) == 2 and r["scored"]["intent_aligned"]]
 frac("SixOnPathTwo", sum(r["scored"]["verified_target"] for r in al2), len(al2))
+# the same measure over EVERY episode in the analysed set, both budgets and both
+# arms -- the denominator the abstract names
+allal = [r for r in rows if r["scored"]["intent_aligned"]]
+frac("SixAllOnPath", sum(r["scored"]["verified_target"] for r in allal), len(allal))
+lowm = 0
+for m in models:
+    A = [r for r in allal if r["model"] == m]
+    if A and sum(r["scored"]["verified_target"] for r in A) / len(A) < 0.96: lowm += 1
+put("SixAllBelowNinetySix", lowm)
+put("SixAllPerfect", sum(1 for m in models
+    if (A := [r for r in allal if r["model"] == m]) and sum(r["scored"]["verified_target"] for r in A) == len(A)))
 
 # --- H25 / H29 / H30: budget 1 ----------------------------------------------
 b1 = [r for r in drift if bud(r) == 1]
@@ -237,6 +248,11 @@ for r in drift:
     for x in r["answer"]["verify_memory_ids"][: bud(r)]:
         s = norm(x); tot += 1
         if len([m for m in valid[r["world"]] if m.replace("memory_", "") in s]) > 1: ambig += 1
+import collections as _c
+att = _c.Counter(r.get("attempts", 1) for r in rows)
+put("SixRetriedTwo", att.get(2, 0)); put("SixRetriedThree", att.get(3, 0))
+worst = _c.Counter(r["model"] for r in rows if r.get("attempts", 1) > 1)
+put("SixRetryWorstModel", ", ".join(m.split("/")[-1] for m, _ in worst.most_common(2)) if worst else "none")
 put("SixCredits", f"{tot:,}")
 put("SixAmbiguous", ambig)
 # The unresolvable half of the same audit, which the earlier draft omitted.

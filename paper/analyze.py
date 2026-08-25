@@ -71,7 +71,8 @@ def fisher(a, b, c, d):
     def pmf(x): return comb(col1, x) * comb(n-col1, row1-x) / comb(n, row1)
     p0 = pmf(a)
     lo, hi = max(0, row1+col1-n), min(row1, col1)
-    return sum(pmf(x) for x in range(lo, hi+1) if pmf(x) <= p0 + 1e-12)
+    # relative tolerance: an absolute one sweeps the far tail in when p0 is tiny
+    return sum(pmf(x) for x in range(lo, hi+1) if pmf(x) <= p0 * (1 + 1e-9))
 
 eps = []
 for f in glob.glob(os.path.join(ROOT, "*", "*", "*.json")):
