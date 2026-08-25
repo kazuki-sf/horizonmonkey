@@ -91,8 +91,71 @@ Experiment 9's intent-stratified argument is not repeated.
 fluent/removed 15.0%, telegraphic/removed 4.2%, bridge 14.2%, and **0.0% in all
 four constraint-retained cells**.
 
-## Status
+## The independent replication
 
-The independent replication of the same 840 episodes is registered and has a
-disjoint seed prefix. Per the pre-registration it was **not inspected, analysed
-or counted until this analysis had been executed and committed.**
+Registered with a disjoint seed prefix and **not inspected, analysed or counted
+until the primary analysis above had been executed and committed** (`3141c10`).
+840 episodes, **0 errors**, **0 seed overlap** with the primary. 33 of 813
+distinct prompts coincide, which is unavoidable: the slot grammar defines only
+36 bodies plus the bridge, so identical body-and-order draws must sometimes
+recur.
+
+**H51 supported.** Primary **+29.2**, replication **+34.6** — a difference of
+**5.4 points**, same sign, inside the registered 10-point band.
+
+Everything else reproduces, and the per-model values are strikingly stable:
+
+| model | primary | replication |
+|---|---|---|
+| claude-opus-5 | +91.2 | +98.8 |
+| gpt-5.6-sol | +52.5 | +55.0 |
+| gpt-5.6-luna | +22.5 | +21.3 |
+| gpt-5.6-terra | +13.7 | +16.2 |
+| claude-haiku-4-5 | +3.8 | +3.7 |
+| claude-sonnet-5 | **−8.8** | **+12.5** |
+
+Five of the six agree to within 3 points across independent runs. The one that
+moves is `claude-sonnet-5`, the model Experiment 9 measured at a **42.1%
+flip rate on byte-identical prompts** — the highest of the six. Its reversal in
+the primary run is consistent with that instability rather than with a stable
+counterexample, and H50 goes from 5 of 6 to **6 of 6**.
+
+The weak spot survives replication as a weak spot: excluding both
+`claude-opus-5` and `gpt-5.6-sol`, the effect is **+7.8** primary and **+13.4**
+replication. Positive in both, but modest.
+
+## Pooled over both runs, 1,680 episodes
+
+| contrast | estimate |
+|---|---|
+| **constraint, removed − retained** | **+31.9** (303/480 = 63.1% [59, 67] against 300/960 = 31.2% [28, 34]) |
+| within `fluent` | +40.6 |
+| within `telegraphic` | +23.1 |
+| syntax, telegraphic − fluent | **−2.1** (length alone predicts about −12) |
+| prohibition beyond the quantified negative | +18.3 |
+| bridge (unquantified) − matched quantified | **−10.4** |
+
+## What this experiment settles
+
+1. **The Experiment 9 gap is carried by the decision-relevant constraint, not
+   by surface form.** It survives with quantification held constant, within
+   each register separately, across six wording families, across two
+   independent runs.
+2. **Syntax does not independently move verification.** −2.1 points pooled,
+   where length alone predicts about −12.
+3. **Quantification does not explain it and the sign is backwards.** The
+   unquantified body is verified 10.4 points *less* than the matched quantified
+   one.
+4. **The constraint decomposes.** An explicit prohibition suppresses 18.3
+   points beyond the quantified negative outcome alone.
+
+## What it does not settle
+
+- **Two of six models carry most of the magnitude.** Without `claude-opus-5`
+  and `gpt-5.6-sol` the effect is +7.8 and +13.4. The direction is consistent;
+  the size is not a property of models in general.
+- **The interaction is real**: the effect is roughly twice as large in fluent
+  as in telegraphic (+40.6 against +23.1). Register modulates the constraint
+  effect even though it does not produce one.
+- **Mediation is not identified.** Intent is reported per cell and nothing is
+  computed on it.
