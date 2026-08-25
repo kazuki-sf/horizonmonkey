@@ -16,8 +16,25 @@ import { WORLDS, lineage6, sources6, corruptedIn, situation6, schema6, situation
 
 loadEnvLocal();
 
+
 export const VERSION = "exp6-v1";
 const MODELS = ["claude-opus-5","claude-sonnet-5","claude-haiku-4-5","gpt-5.6-sol","gpt-5.6-terra","gpt-5.6-luna"];
+
+/** Amendment 6. Nine models beyond Anthropic and OpenAI's frontier line, fixed
+ *  before any call. Eight are open-weight; gemini adds a third proprietary lab;
+ *  gpt-oss is OpenAI's open-weight release, which separates "the lab" from
+ *  "the post-training regime". */
+const OPEN_MODELS = [
+  "meta-llama/llama-4-maverick",
+  "qwen/qwen3.5-397b-a17b",
+  "deepseek/deepseek-v3.1-terminus",
+  "mistralai/mistral-large-2512",
+  "moonshotai/kimi-k2.6",
+  "z-ai/glm-4.7",
+  "openai/gpt-oss-120b",
+  "nvidia/nemotron-3-super-120b-a12b",
+  "google/gemini-2.5-pro",
+];
 const ARMS: Arm[] = ["drifted", "drifted-swap"];
 const BUDGET = process.argv.includes("--budget") ? Number(process.argv[process.argv.indexOf("--budget") + 1]) : 2;
 const OUT = "runs/exp6";
@@ -51,6 +68,15 @@ async function ask(model: string, system: string, user: string, schema: unknown,
         output_config: { format: { type: "json_schema", schema } },
       } as never) as never as { content: { text: string }[]; usage: unknown };
       return { text: r.content.map((c) => c.text).join(""), usage: r.usage };
+    }
+    if (model.includes("/")) {
+      // OpenRouter, OpenAI-compatible chat completions
+      const or = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1" });
+      const r = await or.chat.completions.create({
+        model, messages: [{ role: "system", content: system }, { role: "user", content: user }],
+        response_format: { type: "json_schema", json_schema: { name: "answer", strict: true, schema } },
+      } as never) as never as { choices: { message: { content: string } }[]; usage: unknown };
+      return { text: r.choices[0].message.content, usage: r.usage };
     }
     const r = await new OpenAI().responses.create({
       model, instructions: system, input: user, reasoning: { effort: "medium" },
@@ -86,7 +112,7 @@ function score(w: World, arm: Arm, a: Answer) {
 
 async function episode(w: World, arm: Arm, model: string, run: number, variant: Variant = "base", dose: Dose | null = null) {
   const tag = (dose ? `-dose${dose}` : (variant === "tempting" ? "-tempting" : "")) + (BUDGET !== 2 ? `-b${BUDGET}` : "");
-  const name = `${w.key}__${arm}${tag}__${model}__${run}`;
+  const name = `${w.key}__${arm}${tag}__${model.replace(/\//g, "-")}__${run}`;
   if (existsSync(`${OUT}/${name}.json`)) return { skipped: true } as const;
   const rnd = mulberry32(hash(`${VERSION}|${w.key}|${arm}|${dose ?? variant}|b${BUDGET}|${model}|${run}`));
   const mems: Mem[] = shuffled(lineage6(w, arm), rnd);
@@ -123,7 +149,8 @@ async function pool<T>(tasks: (() => Promise<T>)[], width: number) {
 
 const smoke = process.argv.includes("--smoke");
 const only = process.argv.includes("--models") ? process.argv[process.argv.indexOf("--models") + 1].split(",") : null;
-const RUN_MODELS = only ? MODELS.filter((m) => only.some((o) => m.startsWith(o))) : MODELS;
+const POOL = process.argv.includes("--open") ? OPEN_MODELS : MODELS;
+const RUN_MODELS = only ? POOL.filter((m) => only.some((o) => m.includes(o))) : POOL;
 const VARIANT: Variant = process.argv.includes("--tempting") ? "tempting" : "base";
 const DOSE = (process.argv.includes("--dose") ? process.argv[process.argv.indexOf("--dose") + 1] : null) as Dose | null;
 const RUN_ARMS: Arm[] = (VARIANT === "tempting" || DOSE) ? ["drifted"] : ARMS;   // Amendment 2: tempting registers the drifted arm only

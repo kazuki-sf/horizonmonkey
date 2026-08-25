@@ -404,3 +404,66 @@ predictions, and dose A is the sharpest cell: the salient alternative is live,
 39% to 45% of episodes intend it, and the majority still intend something else.
 
 All earlier failure criteria continue to bind. Nothing already run is re-scored.
+
+---
+
+## Amendment 6 — 24 August 2026, nine more models from eight more organisations
+
+Every model tested so far comes from two labs. "Six production models" is
+accurate and misleading in the same breath: it is two post-training pipelines.
+Nothing in the results so far separates *a property of budgeted agents* from
+*a property of how Anthropic and OpenAI train their frontier line*.
+
+**Nine models, fixed before any call**, reached through OpenRouter:
+
+| model | organisation | weights |
+|---|---|---|
+| meta-llama/llama-4-maverick | Meta | open |
+| qwen/qwen3.5-397b-a17b | Alibaba | open |
+| deepseek/deepseek-v3.1-terminus | DeepSeek | open |
+| mistralai/mistral-large-2512 | Mistral | open |
+| moonshotai/kimi-k2.6 | Moonshot | open |
+| z-ai/glm-4.7 | Zhipu | open |
+| nvidia/nemotron-3-super-120b-a12b | NVIDIA | open |
+| openai/gpt-oss-120b | OpenAI | open |
+| google/gemini-2.5-pro | Google | proprietary |
+
+`openai/gpt-oss-120b` is deliberate: same organisation as three models already
+tested, different weights and post-training. It separates "the lab" from "the
+training regime". `google/gemini-2.5-pro` adds a third proprietary frontier lab.
+`allenai/olmo-3-32b-think` was in this list and is dropped: a pre-run
+availability probe returned 404, OpenRouter serves no endpoint for it. The probe
+tested reachability and structured-output support only, on a fixed one-token
+prompt, and touched none of the experiment's scenarios.
+
+**Grid:** doses {0, A} x budgets {2, 1} x 2 worlds x 9 models x 25 = **1800
+episodes**. Doses 0 and A are the two cells that carry the contrasts: dose 0 is
+where the salient memory is not live, dose A is where it is live but the
+majority still intend something else.
+
+### Hypotheses, registered now
+
+**H28 (the invariant is not an Anthropic-and-OpenAI artefact).** At budget 2, in
+every model and every cell whose intent-aligned subgroup holds at least 20
+episodes, intent-aligned verification of the corrupted memory is >= 0.90. If it
+fails for a majority of the nine, the on-path invariant is reported as specific
+to the frontier line of two labs, in the abstract.
+
+**H29 (the budget-1 drop replicates).** Pooled over the nine, the on-path rate
+at budget 1 is strictly lower than at budget 2, as it was for the original six
+(90% against 97%).
+
+**H30 (salience still loses).** At budget 1, in every model, P(the credit goes to
+a memory backing the stated intent) > P(it goes to the topically salient
+off-path memory). H27 held in all eight cells for the original six; this asks
+whether it holds per model across nine more.
+
+### Error handling, fixed now
+
+Weaker models may fail structured decoding. An episode that does not produce a
+schema-valid object after five retries is written as an error and counted.
+**A model whose error rate exceeds 20% is reported as unusable and excluded with
+its rate stated**, not silently carried with a smaller denominator. Error rates
+are reported per model whatever they are.
+
+All earlier failure criteria continue to bind. Nothing already run is re-scored.
