@@ -77,7 +77,8 @@ conditioning on intent (−21.0).
 consolidated body is stealthier *than the original*. It is not.
 `natural-padded` at 30.7% sits on top of `intact` at 24.0%, intervals
 overlapping — above it, not below. H44 passes on a bare sign with no
-registered threshold and must not be quoted as an effect.
+registered threshold, and at −6.7 points it is below the reproducibility floor
+measured below. It must not be quoted as an effect.
 
 ## A defect in my own padding, disclosed
 
@@ -86,10 +87,10 @@ terminal punctuation, producing run-ons: `…ret-12%, dies at renewal;
 unsustain Measured over four weeks in the standard SMB segment.` Those 23
 verify **11/23 = 47.8%**; the 127 clean ones verify **35/127 = 27.6%**.
 
-This is conservative for H41 — excluding the run-ons the gap is **−33.1**
-rather than −30.0 — but it is a real defect, it is the second padding bug in
-this experiment, and it is direct evidence that surface form moves
-verification. The registered arm's data is **not** rewritten. A separate
+Excluding the run-ons the gap is **−33.1** rather than −30.0, so the defect is
+conservative for H41 — but it is a real defect, it is the second padding bug in
+this experiment, and it looked like direct evidence that surface form moves
+verification until it was tested properly. See below: it is not. The registered arm's data is **not** rewritten. A separate
 150-episode run with the punctuation fixed sits in `runs/exp9-sens` and is
 reported below as a labelled sensitivity analysis, never replacing the primary.
 
@@ -101,15 +102,51 @@ rate from those 18 gave −48.2 points, which is a model-composition artefact an
 is recorded here only so the number is not mistaken for a result if it surfaces
 in a log. The 18 files are kept and superseded by the completed run.
 
-## The register confound, no longer dismissed
+## The sensitivity run, and an empirical reproducibility floor
 
-The previous version discharged the register objection — telegraphic note
-versus fluent sentence — by saying register cannot explain a 0/150 to 28/150
-swing in planned action. That argument is void: it uses the intent column,
-which has zero variance in half the models where the verification gap is
-25.3 points. **Register is a live alternative explanation and this experiment
-does not separate it from provenance.** The run-on finding above makes it more
-live, not less. This is the honest next experiment.
+The punctuation fix ran as a separate 150-episode arm, 0 errors, 0 run-ons.
+It leaves the result standing: **34.7% [28, 43] against `hand-drift`'s 60.7%,
+H41 = −26.0 points**, CMH χ² = 24.3, p = 8.1e−07, and −17.0 restricted to
+`hand-drift` episodes that planned no risky action. The defect did not drive
+H41.
+
+The run also produced something more useful than a sensitivity check. Only 23
+of the 150 bodies needed the fix; **the other 127 received a byte-identical
+prompt**, making that run a direct replication of the registered arm. It gives
+this paper a measured reproducibility floor it did not previously have:
+
+- **32 of 127 episodes, 25.2%, flip outcome on an identical prompt.** Exact
+  McNemar 20 gained against 12 lost, p = 0.215.
+- The aggregate rate moved **27.6% → 33.9%, +6.3 points, from sampling alone.**
+- Per model the flip rate ranges from 8.7% (`claude-haiku-4-5`, `claude-opus-5`)
+  to 42.1% (`claude-sonnet-5`).
+
+**Nothing below about 10 points should be quoted as an effect anywhere in this
+paper.** That disqualifies three numbers, one of them a registered hypothesis:
+Experiment 9's H44 (−6.7), the paired punctuation contrast (−8.7), and it
+confirms Experiment 8's H36 null (−3.3) as a null rather than a small effect.
+Everything the paper actually argues from — Experiment 7's +84.7, Experiment
+8's −46.0, Experiment 9's −30.0, −26.0, −25.3 and −21.0 — is far above it.
+
+## The register confound: the audit's evidence for it does not hold, but it is still live
+
+The audit offered the run-on split as direct evidence that surface form moves
+verification: the 23 run-on episodes verify 47.8% against 27.6% for the clean
+127. **That is a between-body comparison, not a form effect.** Bodies lacking
+terminal punctuation are a different, more truncated set of bodies; it does not
+put the same body in two forms.
+
+The sensitivity run does put the same body in two forms. Taking those same 23
+episodes and changing nothing but a full stop before the filler moves
+verification **−8.7 points, exact McNemar p = 0.774** — below the floor
+measured above, in the opposite direction to the audit's inference, and not
+distinguishable from noise. **Punctuation does not move verification.**
+
+The broader register objection nonetheless stands, and the previous version's
+dismissal of it remains void. Telegraphic note against fluent sentence is a
+much larger stylistic difference than a full stop, and this experiment does not
+separate it from provenance by design. It is the first-order limitation and the
+obvious next experiment; it simply is not supported by the run-on split.
 
 ## What replicates
 
@@ -125,8 +162,12 @@ disjoint seeds, with no shared response strings:
 
 ## Limits, stated plainly
 
-- **Register is not separated from provenance.** See above. This is now the
-  first-order limitation, not the last.
+- **Register is not separated from provenance.** Telegraphic note against
+  fluent sentence. This is the first-order limitation, not the last.
+- **H44 is below the measured reproducibility floor** (−6.7 against a 25.2%
+  per-episode flip rate and a +6.3 point between-run drift on identical
+  prompts). It passes as a registered sign test and must not be quoted as an
+  effect.
 - **Six generations.** Whether the constraint survives twenty is untested.
 - **One scenario, one constraint.** Experiment 6 established the allocation
   result across two worlds and 16 models; this chain result has not been.
