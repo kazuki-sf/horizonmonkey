@@ -43,6 +43,7 @@ const ARMS: Arm[] = ["drifted", "drifted-swap"];
  *  non-binding for every one of them and gives the open pool 1.7x the worst
  *  frontier case. A 32000 ceiling made several reasoning models generate until
  *  the request timed out, which is what produced the earlier failure rates. */
+const ATTEMPTS = 3;   // uniform: a non-conforming body is retried for every model
 const OPEN_MAX_TOKENS = 16000;   // matches the Anthropic path exactly
 const BUDGET = process.argv.includes("--budget") ? Number(process.argv[process.argv.indexOf("--budget") + 1]) : 2;
 const OUT = "runs/exp6";
@@ -130,17 +131,18 @@ async function episode(w: World, arm: Arm, model: string, run: number, variant: 
   const rnd = mulberry32(hash(`${VERSION}|${w.key}|${arm}|${dose ?? variant}|b${BUDGET}|${model}|${run}`));
   const mems: Mem[] = shuffled(lineage6(w, arm), rnd);
   const user = dose ? situationDose(w, mems, BUDGET, dose) : situation6(w, mems, BUDGET, variant);
-  try {
+
+  /** One attempt: call, normalise, parse, validate against the schema here. */
+  async function attemptOnce() {
     const { text, usage } = await ask(model, w.system, user, schema6(w));
-    // Uniform normalisation, applied to every model on every path: some models
-    // wrap the object in a markdown fence. Nothing model-specific here.
+    // Uniform normalisation on every model and every path: some wrap the object
+    // in a markdown fence. Nothing model-specific.
     const clean = String(text).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
     let answer: Answer;
     try { answer = JSON.parse(clean) as Answer; }
     catch (pe) { const err = new Error(`JSON parse failed: ${String(pe).slice(0, 120)}`) as Error & { raw?: string }; err.raw = clean.slice(0, 600); throw err; }
-    // Validate the returned object against the schema ourselves rather than
-    // trusting a provider's declaration that it honours response_format. Applied
-    // identically to every model on every path.
+    // Validate here rather than trusting a provider's declaration that it
+    // honours response_format. Identical for every model.
     const sc = schema6(w) as { properties: Record<string, { enum?: readonly string[] }>; required: readonly string[] };
     const bad: string[] = [];
     if (!answer || typeof answer !== "object") bad.push("not an object");
@@ -155,26 +157,40 @@ async function episode(w: World, arm: Arm, model: string, run: number, variant: 
       if (typeof answer.downstream_value_risk_flagged !== "boolean") bad.push("downstream_value_risk_flagged not boolean");
       if (typeof answer.preserves_uncertainty !== "boolean") bad.push("preserves_uncertainty not boolean");
     }
-    if (bad.length)
-      { const err = new Error(`schema violation: ${bad.join("; ")}`) as Error & { raw?: string }; err.raw = clean.slice(0, 600); throw err; }
-    const rec = {
-      version: VERSION, world: w.key, arm, variant, dose: dose ?? (variant === "tempting" ? "AB" : "0"), model, run, budget: BUDGET,
-      order: mems.map((m) => m.id), answer, usage,
-      scored: score(w, arm, answer),
-      sources_available: Object.keys(sources6(w, arm)),
-    };
-    mkdirSync(OUT, { recursive: true });
-    writeFileSync(`${OUT}/${name}.json`, JSON.stringify(rec, null, 1));
-    return { ok: true } as const;
-  } catch (e) {
-    // Pre-registered: errors are recorded and counted, never silently dropped.
-    mkdirSync(OUT, { recursive: true });
-    writeFileSync(`${OUT}/${name}.ERROR.json`, JSON.stringify({
-      version: VERSION, world: w.key, arm, variant, model, run, error: String(e).slice(0, 800),
-      raw: (e as { raw?: string }).raw ?? null,
-    }, null, 1));
-    return { err: true } as const;
+    if (bad.length) { const err = new Error(`schema violation: ${bad.join("; ")}`) as Error & { raw?: string }; err.raw = clean.slice(0, 600); throw err; }
+    return { answer, usage };
   }
+
+  // A null or non-conforming body is a transport failure, not an answer: the
+  // same request succeeds on retry. Retried up to ATTEMPTS times for EVERY
+  // model, and the attempt count is recorded in the episode.
+  let last: unknown = null;
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    try {
+      const { answer, usage } = await attemptOnce();
+      const rec = {
+        version: VERSION, world: w.key, arm, variant, dose: dose ?? (variant === "tempting" ? "AB" : "0"), model, run, budget: BUDGET,
+        attempts: attempt,
+        order: mems.map((m) => m.id), answer, usage,
+        scored: score(w, arm, answer),
+        sources_available: Object.keys(sources6(w, arm)),
+      };
+      mkdirSync(OUT, { recursive: true });
+      writeFileSync(`${OUT}/${name}.json`, JSON.stringify(rec, null, 1));
+      return { ok: true } as const;
+    } catch (e) {
+      last = e;
+      if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, 1200 * attempt));
+    }
+  }
+  // Pre-registered: a failure that survives every attempt is recorded and
+  // counted, never silently dropped.
+  mkdirSync(OUT, { recursive: true });
+  writeFileSync(`${OUT}/${name}.ERROR.json`, JSON.stringify({
+    version: VERSION, world: w.key, arm, variant, dose: dose ?? (variant === "tempting" ? "AB" : "0"), model, run,
+    attempts: ATTEMPTS, error: String(last).slice(0, 800), raw: (last as { raw?: string }).raw ?? null,
+  }, null, 1));
+  return { err: true } as const;
 }
 
 async function pool<T>(tasks: (() => Promise<T>)[], width: number) {

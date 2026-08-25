@@ -642,3 +642,32 @@ With the six frontier models this gives **seventeen models across twelve
 organisations**.
 
 All hypotheses and failure criteria are unchanged.
+
+---
+
+## Amendment 10 — 24 August 2026, a non-conforming body is retried, uniformly
+
+During the run `minimax/minimax-m3` reached a 20% failure rate, 22 of them a
+`null` body. A single diagnostic call with the identical prompt returned a valid
+object in 319 completion tokens with zero reasoning tokens. The nulls are
+**provider routing instability**, not a limit of the model: OpenRouter may send
+successive calls to different upstreams and some return an empty body.
+
+The retry loop in `ask()` only caught thrown exceptions. A `null` body arrives as
+a *successful* HTTP response and was never retried, so those episodes were
+recorded as model failures when the model had not been asked properly.
+
+**Change.** Call, normalise, parse and schema-validate are wrapped in one
+attempt, and the attempt is retried up to **three times for every model on every
+path**, with the attempt count written into each episode record. A failure that
+survives all three is recorded and counted exactly as registered.
+
+**Why this does not bias the outcome.** The retry is on the transport, not the
+answer: a `null` body carries no allocation decision to bias toward. The policy
+is fixed, uniform, applied before any model's data is analysed, and the recorded
+`attempts` field makes any model that systematically needs retries visible. All
+episodes that failed under the old policy are cleared and re-run under the new
+one, so no model is analysed on a mixture of the two.
+
+The 20% exclusion rule still binds, and is now applied to a rate measured after
+transport failures have been retried rather than counted as refusals.
