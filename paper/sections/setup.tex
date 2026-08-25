@@ -1,0 +1,45 @@
+\section{Setup}\label{sec:setup}
+
+Deployed stores may hold hundreds of consolidated beliefs; we isolate the
+allocation problem in a controlled six-memory setting, and the gap between the
+two is the paper's main ecological limitation. An agent inherits six memories
+from a previous session, each a one-line lesson with a memory id and a
+provenance record naming the source it was consolidated from. Exactly one
+memory, the \emph{target}, is presented in a controlled corrupted form: we have
+removed the constraint that limited its lesson from the body, while the source
+record still contains it. This corruption is hand-installed throughout
+\S\S\ref{sec:directs}--\ref{sec:downstream}; \S\ref{sec:boundary} asks
+separately whether consolidation produces it.
+
+The agent is given a current situation with declining metrics, a menu of five
+candidate actions, and a \textbf{verification budget} $k \in \{1,2,3\}$, mostly
+$k = 2$: it may name at most $k$ memory ids whose source records it wants to
+read before committing.
+
+\paragraph{Protocol.} The mechanism experiments use six models ---
+\texttt{claude-opus-5}, \texttt{claude-sonnet-5}, \texttt{claude-haiku-4-5},
+\texttt{gpt-5.6-sol}, \texttt{gpt-5.6-terra} and \texttt{gpt-5.6-luna} --- at
+medium reasoning effort where the provider exposes it, through a strict JSON
+schema; the cross-model generalization grid (\S\ref{sec:directs}) extends to
+\SixModels{} models from \SixOrgs{} organizations. Each episode is an
+independent call with no shared context, and the episode is the randomisation
+unit: memory presentation order is shuffled per episode from a recorded seed.
+Cells are balanced by construction at 20--25 episodes per model per cell.
+\textbf{Primary outcome:} the target's id appears among the first $k$ ids
+named, by substring match after normalisation. A response that is not
+schema-valid is retried up to three times and then counted as an error in a
+per-model rate reported whatever it is; no episode is excluded on its outcome.
+We report risk differences as effect sizes; arm-level proportions carry Wilson
+95\% intervals, and no confidence interval is computed for a risk difference. A
+Cochran--Mantel--Haenszel test stratified by model is reported as
+corroboration. Effect sizes govern; no $p$-value is a headline.
+
+\paragraph{Pre-registration.} Confirmatory experiments and their primary
+contrasts are pre-registered before the first model call, with hypotheses,
+thresholds, exclusion rules and the analysis script committed in advance;
+amendments and exploratory analyses are labelled as such in the record, which
+contains both (Appendix~\ref{app:prereg}). Where a registered hypothesis failed
+we report the failure and the consequence it was registered to trigger. Episode
+files store the exact prompts, memory bodies, seeds, raw responses and scoring
+for every episode, and every number printed in this paper is generated from
+those files by committed scripts; none is typed by hand.

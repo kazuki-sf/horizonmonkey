@@ -1,0 +1,80 @@
+\section{Introduction}
+
+Agent memory systems increasingly store provenance: each consolidated belief
+carries a link to the observation, tool call or session it came from. The
+implicit promise is auditability --- if a belief is wrong, the record that
+would reveal it is still there.
+
+An agent acting under a deadline cannot use that promise at scale. It inherits
+more beliefs than it can re-derive, and following a provenance link costs a
+tool call, latency and context. So it follows a few. Which few is a scheduling
+decision that is rarely treated as a distinct control problem, and that
+decision, not the existence of the links, determines whether a corrupted belief
+is caught.
+
+We study the decision directly. An agent inherits six memories from a previous
+session. We install a controlled corruption in exactly one of them, removing a
+true negative constraint from the memory body while leaving it recoverable from
+the source record. It may pull at most $k$ source records before committing to
+an action. We measure which records it pulls, and what it decides.
+
+\paragraph{Findings.}
+\begin{itemize}\itemsep2pt
+\item \textbf{An exogenous plan assignment redirects verification.} Assigning
+the working plan at random, with the action field removed from the response
+schema, moves the scarce verification credit by \SevenDelta{} points
+(\S\ref{sec:directs}). This identifies the assignment, which does not isolate
+internal plan state from topical salience or directive framing. This is the
+upstream half of the chain.
+\item \textbf{A memory that states its constraint is checked less.} At fixed
+length, a true decision-relevant caveat suppresses verification by
+\EightCaveatVsPadded{} points. The constraint effect survives controls for
+register and numeric content and an independent replication (\TenPooled{}
+points, \TenContrastN{} episodes), with magnitude varying substantially by
+model (\S\ref{sec:content}). Our earlier interpretation of this contrast as a
+hedging effect was falsified by our own pre-registered control and is
+withdrawn.
+\item \textbf{What is recovered changes the later decision.} Randomising which
+provenance reaches a second agent moves the corrupted-direction rate from
+\ThreeBOthK/\ThreeBOthN{} to \ThreeBTgtK/\ThreeBTgtN{}
+(\S\ref{sec:downstream}). This is the downstream half. The two halves are
+identified separately, not end to end.
+\item \textbf{A boundary on the threat model.} The consolidation pipeline we
+tested does not produce the corruption the controlled experiments install
+(\S\ref{sec:boundary}). Reported as a finding, not a caveat: the allocation
+dependence is demonstrated, the natural prevalence of the corruption that would
+make it harmful is not.
+\end{itemize}
+
+\paragraph{Related work.} Work on agent memory safety has concentrated on
+keeping the store correct: poisoning attacks and defenses
+\citep{dash2026untrusted,louck2026securing}, benchmarks for memory misevolution
+\citep{xie2026memevobench}, authority collapse at the consolidation boundary
+\citep{zhan2026authority}, and reliability-conditional belief updating
+\citep{singh2026belief}. A parallel line records where content came from,
+surveying evidence tracing and execution provenance in agents
+\citep{wang2026traces} and auditing how provenance changes action selection
+\citep{liao2026auditing}. Closest to us, \citet{fei2026selection} argue that
+per-record provenance is insufficient when the \emph{selection} layer is itself
+compromised. We agree on the diagnosis and differ on the boundary: their
+integrity threat is what retrieval puts in front of the agent, ours is which of
+the records already in front of it the agent chooses to re-derive under a
+budget it cannot exceed --- a choice made at inference time that is not a
+property of the store. These works do not directly measure which
+already-present inherited records a budget-limited agent chooses to re-derive.
+Budget-aware agent work asks whether agents spend tool calls well
+\citep{lin2026bagen,fang2026budget,wang2026allocbench} without treating
+verification of \emph{inherited belief} as the scarce resource, and
+\citet{yang2026hetero} reports that structural heterogeneity limits what
+budgeted verification can gain --- consistent with the model heterogeneity we
+find in \S\ref{sec:content}. Self-auditing before commitment
+\citep{yuan2026verify} and belief-guided inference control
+\citep{yuan2026belief} propose acting on such checks; our results say what an
+unaided agent currently checks. The direction of the allocation we measure is
+consistent with the classical positive-test strategy
+\citep{wason1960,klayman1987}, and we do not claim novelty for simply restating
+that finding in language models. The new object is \textbf{verification of
+inherited provenance as a scarce resource}: its allocation is measurable and
+exogenously manipulable, while which provenance is available downstream is
+consequential for later decisions. This becomes a distinct systems problem once
+memory persists across sessions and a budget forbids re-deriving all of it.

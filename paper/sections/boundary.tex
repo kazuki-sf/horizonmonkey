@@ -1,0 +1,80 @@
+\section{Threat-model boundary: what consolidation actually removed}\label{sec:boundary}
+
+The controlled experiments above install the corruption by hand, deleting a
+negative caveat entirely. Whether that omission arises on its own is a separate
+question, and the answer bounds everything else in this paper.
+
+\paragraph{Four things a memory can lose.} These come apart in what follows and
+are not interchangeable. A \textbf{negative outcome} is an adverse empirical
+result, here retention $-12$pp. A \textbf{scope constraint} restricts the
+population, period or context a result holds for. A \textbf{prohibition} is a
+normative instruction, ``do not reuse this''. \textbf{Complete negative
+deletion} is the corruption our controlled sections install: no adverse outcome
+and no warning of any kind remains.
+
+Figure~\ref{fig:erosion} summarises what happened. We ran a benign consolidation pipeline --- \FiveChains{} chains,
+\FiveGenerations{} generations, each generation asked only to compress and carry
+forward, with no instruction about caveats or qualifiers --- and scored every
+generation of every chain with a frozen model scorer. On the two records that
+carry no qualifier in their source it returns \FiveFalsePosAll{} false
+positives, and on the four that do it recovers the qualifier in
+\FiveScorerSensK/\FiveScorerSensN{} first-generation bodies. Two limitations
+follow it into every number below: the scorer is \texttt{\FiveScorerModel},
+which is \textbf{also one of the six consolidator models}, so it is not
+independent of the systems it judges; and no human validation was performed.
+The negative-outcome counts, by contrast, are deterministic keyword detection
+and do not depend on the scorer at all.
+
+\paragraph{What survived.} \textbf{Complete negative deletion} appears in
+\FivePurelyPositive{} chain-generations. This is the only claim the
+\FivePurelyPositive{} figure supports; it is not a claim that nothing eroded. The quantified negative is durable: it is present in
+\FiveNumAllGens{} chains at \emph{every} one of the six generations
+(\FiveNumSeries\%), and of the \NineBodies{} distinct final-generation bodies,
+\NineKeepNeg{} carry a number attached to a negative outcome or a churn or
+retention term. Appendix~\ref{app:consolidation} prints final-generation bodies
+verbatim, selected by a stated deterministic rule.
+
+\paragraph{What did not.} The same scorer shows the qualifier eroding
+\emph{monotonically inside the horizon we tested}. For the target memory the
+share of chains still stating its qualifier runs
+\FiveTgtSeries\% across the six generations, ending at
+\FiveTgtGenSixK/\FiveTgtGenSixN. For the three memories whose qualifier is a scope
+restriction rather than a number, it runs \FiveScopeSeries\%, ending at
+\FiveScopeGenSixK/\FiveScopeGenSixN. The explicit prohibition falls too, from
+\FiveProGenOneK/\FiveProGenN{} chains to \FiveProGenSixK/\FiveProGenN{}
+(\FiveProSeries\%), though not monotonically, so we report the level rather
+than a trend. Consolidation did not remove the number; the scope
+declined monotonically and roughly half the prohibitions were gone by the sixth
+generation.
+
+\paragraph{What that does to the risky action.} Running the allocation protocol
+on the final-generation bodies, a consolidated body suppresses the risky action
+as completely as the intact original: it is planned in
+\NineNatIntentK/\NineNatIntentN{} episodes against
+\NineIntactIntentK/\NineIntactIntentN{} for the intact original and
+\NineHandIntentK/\NineHandIntentN{} for the hand-stripped body. It is verified far less often than our hand-built corruption:
+\NineNatPct\% against \NineHandPct\%, \NineNatVsHand{} points raw, and
+\NinePadVsHand{} points once the consolidated body is padded to the
+hand-built body's length --- the pre-registered primary contrast, whose padded arm exists because
+\S\ref{sec:content} shows a \EightLengthEffect{}-point silent-deletion versus
+neutral-clause gap. Against the intact original it is
+\NineNatVsIntact{} points, a difference we do not interpret: it is smaller than
+the run-to-run variability we measure in \S\ref{sec:limits} and has not been
+replicated (full arm table in Appendix~\ref{app:models}). \textbf{We cannot say whether a consolidated body is harder or
+easier to catch than the record it came from}; what we can say is that it is
+not the corruption our controlled sections install.
+
+\begin{center}\itshape
+The allocation dependence is real, but whether it becomes harmful depends on
+what memory degradation actually removes. In the benign consolidation process we
+tested, the quantified negative survived all six generations and complete deletion
+did not occur --- while scope fell to \FiveScopeGenSixPct\% and roughly half
+the explicit prohibitions were gone.
+\end{center}
+
+\noindent We do not generalise this beyond the tested scenario, models,
+consolidation procedure and \FiveGenerations{}-generation horizon, and the
+erosion trend is a reason not to: it is a decline observed \emph{within} the
+horizon, not a plateau. A longer horizon, a lossier or adversarial pipeline, or
+a constraint expressed only as scope may well produce the omission this pipeline
+did not.

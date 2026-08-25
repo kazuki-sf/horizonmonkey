@@ -1,0 +1,75 @@
+\section{Discussion}\label{sec:discussion}
+
+The results separate two questions that current memory architectures answer with
+one mechanism. A retriever answers \emph{what is relevant to the present
+context?} Under a verification budget the agent must also answer \emph{which
+inherited belief is most costly to leave unverified?} These need not induce the same ranking. \S\ref{sec:directs} shows the agent's scarce checking follows the
+first question --- attention goes where the plan already points --- and
+\S\ref{sec:content} shows the second also depends on the memory's own content:
+a belief that states its constraint is checked substantially less often than a
+length-matched belief that does not. We
+note what this does \emph{not} show: no arm in any experiment states a
+constraint that is false or stale, so whether a confidently-stated but outdated
+constraint escapes checking --- the case the safety motivation turns on ---
+remains untested.
+
+Nothing here shows that the allocation we measure is \emph{wrong}. Every
+constraint in every arm of every experiment is true, and declining to spend a
+scarce credit re-deriving a true, already-stated constraint is locally sensible.
+The concern is narrower and conditional: \emph{if} present relevance and future
+expected loss diverge, a policy dominated by the former could under-check
+beliefs whose later staleness would be costly. We do not establish that this
+occurs. Testing it requires a constraint that is false or out of date, which we
+do not run.
+
+With that bound stated, verification scheduling is worth separating from
+retrieval and from provenance storage as a control layer with its own inputs: relevance to the current plan,
+loss if the belief is wrong, how many consolidation steps the record has passed
+through, how far its scope has broadened, and when it was last checked. We do
+not evaluate such a scheduler, and we could not identify a normatively correct
+verification order from this data: that would require a corruption prior, a
+distribution over future contexts and a loss model, none of which these
+experiments supply. The contribution is the measurement that motivates building
+one.
+
+\section{Limitations}\label{sec:limits}
+
+\textbf{Stochastic instability at the episode level.} Re-running
+\StabilityN{} byte-identical prompts flips \StabilityFlip{} outcomes
+(\StabilityFlipPct\%), ranging from \StabilityMin\% to \StabilityMax\% by model,
+with \StabilityWorstModel{} least stable. Small effects here require independent
+replication before they are interpreted; that is why \S\ref{sec:content}
+reports two runs rather than one, and why we do not interpret contrasts of a few
+points.
+
+\textbf{Model heterogeneity.} Magnitudes vary by an order of magnitude across
+models (\S\ref{sec:content}). We avoid claims about language models in general.
+
+\textbf{Geometry and scenarios.} Six inherited memories and a budget of one to
+three is small against a production store, and the scenarios are synthetic. The allocation signature was reproduced across \SixModels{} models in two
+worlds beyond the one the mechanism experiments use, but those mechanism
+experiments use a single world.
+
+\textbf{Prompting and structured output.} All results are obtained through a
+fixed system prompt and a strict JSON schema. \S\ref{sec:directs} shows the main
+causal result strengthens when the action field is removed, but the protocol is
+not the only way to elicit these behaviours.
+
+\textbf{The plan manipulation bundles three things.} \S\ref{sec:directs}
+cannot separate working-plan state from the topical salience of naming the plan
+or from directive framing. The randomised intervention effect stands; its
+internal composition is not identified, and the discriminating cell was not
+run.
+
+\textbf{What is not identified.} The upstream and downstream halves of the chain
+are identified separately and not end to end. Intent is measured after treatment
+and is a candidate mediator; we compute no contrast on it and claim no
+mediation. \S\ref{sec:content} does not identify a causal main effect of
+register.
+
+\textbf{Adaptive history.} Several interpretations reported in earlier versions
+of this work were falsified by our own pre-registered tests and have been
+withdrawn: the hedging effect of \S\ref{sec:content}, and the claim that
+naturally consolidated records are harder to catch than the record they came
+from. Pre-registrations, amendments and every episode file are in the
+supplementary record.
