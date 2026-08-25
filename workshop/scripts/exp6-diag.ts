@@ -5,14 +5,14 @@ loadEnvLocal();
 const model = process.argv[2];
 const maxTok = Number(process.argv[3] ?? 32000);
 const or = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1",
-                        timeout: 90_000, maxRetries: 0 });
+                        timeout: Number(process.argv[4] ?? 90000), maxRetries: 0 });
 const w = WORLDS[0];
 const user = situationDose(w, lineage6(w, "drifted"), 2, "A");
 async function main() {
   const t0 = Date.now();
   try {
     const r = await or.chat.completions.create({
-      model, max_tokens: maxTok,
+      model, max_tokens: maxTok, reasoning: { effort: "medium" }, provider: { require_parameters: true },
       messages: [{ role: "system", content: w.system }, { role: "user", content: user }],
       response_format: { type: "json_schema", json_schema: { name: "answer", strict: true, schema: schema6(w) } },
     } as never) as never as { choices: { message: { content: string | null } }[]; usage: Record<string, number> };

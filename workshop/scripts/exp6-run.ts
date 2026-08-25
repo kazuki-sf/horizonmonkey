@@ -29,7 +29,6 @@ const OPEN_MODELS = [
   "x-ai/grok-4.6",                    // xAI           2026-08-12
   "deepseek/deepseek-v4-pro-0813",    // DeepSeek      2026-08-12
   "qwen/qwen3.8-max",                 // Alibaba       2026-08-03
-  "z-ai/glm-5.3",                     // Zhipu         2026-08-18
   "moonshotai/kimi-k3",               // Moonshot      2026-07-16
   "minimax/minimax-m3",               // MiniMax       2026-05-31
   "nvidia/nemotron-3.5-lightning",    // NVIDIA        2026-08-11
@@ -44,7 +43,7 @@ const ARMS: Arm[] = ["drifted", "drifted-swap"];
  *  non-binding for every one of them and gives the open pool 1.7x the worst
  *  frontier case. A 32000 ceiling made several reasoning models generate until
  *  the request timed out, which is what produced the earlier failure rates. */
-const OPEN_MAX_TOKENS = 8000;
+const OPEN_MAX_TOKENS = 16000;   // matches the Anthropic path exactly
 const BUDGET = process.argv.includes("--budget") ? Number(process.argv[process.argv.indexOf("--budget") + 1]) : 2;
 const OUT = "runs/exp6";
 
@@ -83,6 +82,10 @@ async function ask(model: string, system: string, user: string, schema: unknown,
       const or = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1", timeout: 120_000, maxRetries: 0 });
       const r = await or.chat.completions.create({
         model, max_tokens: OPEN_MAX_TOKENS,
+        // reasoning is metered separately, as it is on the OpenAI Responses path;
+        // require_parameters refuses providers that would ignore response_format,
+        // so a model that runs is guaranteed to have been asked for the schema.
+        reasoning: { effort: "medium" },
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
         response_format: { type: "json_schema", json_schema: { name: "answer", strict: true, schema } },
       } as never) as never as { choices: { message: { content: string } }[]; usage: unknown };
@@ -135,8 +138,25 @@ async function episode(w: World, arm: Arm, model: string, run: number, variant: 
     let answer: Answer;
     try { answer = JSON.parse(clean) as Answer; }
     catch (pe) { const err = new Error(`JSON parse failed: ${String(pe).slice(0, 120)}`) as Error & { raw?: string }; err.raw = clean.slice(0, 600); throw err; }
-    if (!answer || typeof answer !== "object" || !Array.isArray(answer.verify_memory_ids))
-      { const err = new Error("model returned no schema-valid object") as Error & { raw?: string }; err.raw = clean.slice(0, 600); throw err; }
+    // Validate the returned object against the schema ourselves rather than
+    // trusting a provider's declaration that it honours response_format. Applied
+    // identically to every model on every path.
+    const sc = schema6(w) as { properties: Record<string, { enum?: readonly string[] }>; required: readonly string[] };
+    const bad: string[] = [];
+    if (!answer || typeof answer !== "object") bad.push("not an object");
+    else {
+      for (const k of sc.required) if (!(k in (answer as Record<string, unknown>))) bad.push(`missing ${k}`);
+      if (!Array.isArray(answer.verify_memory_ids)) bad.push("verify_memory_ids not an array");
+      if (!Array.isArray(answer.uses_memory_ids)) bad.push("uses_memory_ids not an array");
+      for (const k of ["intended_action", "scale"] as const) {
+        const allowed = sc.properties[k]?.enum;
+        if (allowed && !allowed.includes(answer[k] as string)) bad.push(`${k}="${answer[k]}" not in enum`);
+      }
+      if (typeof answer.downstream_value_risk_flagged !== "boolean") bad.push("downstream_value_risk_flagged not boolean");
+      if (typeof answer.preserves_uncertainty !== "boolean") bad.push("preserves_uncertainty not boolean");
+    }
+    if (bad.length)
+      { const err = new Error(`schema violation: ${bad.join("; ")}`) as Error & { raw?: string }; err.raw = clean.slice(0, 600); throw err; }
     const rec = {
       version: VERSION, world: w.key, arm, variant, dose: dose ?? (variant === "tempting" ? "AB" : "0"), model, run, budget: BUDGET,
       order: mems.map((m) => m.id), answer, usage,
@@ -151,6 +171,7 @@ async function episode(w: World, arm: Arm, model: string, run: number, variant: 
     mkdirSync(OUT, { recursive: true });
     writeFileSync(`${OUT}/${name}.ERROR.json`, JSON.stringify({
       version: VERSION, world: w.key, arm, variant, model, run, error: String(e).slice(0, 800),
+      raw: (e as { raw?: string }).raw ?? null,
     }, null, 1));
     return { err: true } as const;
   }

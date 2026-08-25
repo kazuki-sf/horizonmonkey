@@ -584,3 +584,61 @@ on the real prompt and the real schema first; only parse success is read, and
 the smoke episodes are deleted before the registered run.
 
 All hypotheses and failure criteria are unchanged.
+
+---
+
+## Amendment 9 — 24 August 2026, output validation replaces provider trust; the final list
+
+### Five integration faults, all found by smoke-testing the real task
+
+Amendment 7 recorded two. Three more surfaced on the corrected model list, and
+each would have corrupted the result in a different way:
+
+| fault | symptom | what it would have produced |
+|---|---|---|
+| no markdown fence stripped | glm-4.7 0/4 | a false "unusable" verdict on a working model |
+| no `max_tokens` on the OpenRouter path | llama-4 1/4 | the same, from truncation |
+| ceiling set to 32000 | several models timed out | high failure rates that were the harness's |
+| **`max_tokens` counts reasoning tokens** | qwen3.8-max spent all 8000 on reasoning and returned `content: null` | a false "cannot follow the schema" verdict |
+| **providers that ignore `response_format`** | glm-5.3 returned `{verify, intended_action, reasoning}` | **silently non-conforming data scored as if valid** |
+
+The fourth is why `reasoning: { effort: "medium" }` is now set on the OpenRouter
+path: the OpenAI Responses path already meters reasoning separately, so without
+it the three paths were not comparable. `max_tokens` is 16000 everywhere, which
+is exactly the Anthropic path's value.
+
+### Validation is done here, not delegated to the provider
+
+`provider: { require_parameters: true }` was tried and rejected. It works, but it
+relies on a provider's **self-declaration** and it excluded
+`meta-llama/llama-4-maverick`, which in fact returns conforming objects,
+removing Meta from the study for a bookkeeping reason.
+
+Instead, **every returned object is validated against the schema in this
+repository**: all required keys present, both id lists arrays, both booleans
+booleans, `intended_action` and `scale` inside their enums. Any violation is an
+error, and the error record names the exact fields. This is applied identically
+to every model on every path, and it does not depend on what a provider claims.
+
+### Final model list
+
+**Run (eleven):** `google/gemini-3.7-flash`, `x-ai/grok-4.6`,
+`deepseek/deepseek-v4-pro-0813`, `qwen/qwen3.8-max`, `moonshotai/kimi-k3`,
+`minimax/minimax-m3`, `mistralai/mistral-medium-3-5`, `tencent/hy3`,
+`meta-llama/llama-4-maverick`, `openai/gpt-oss-120b`,
+`nvidia/nemotron-3.5-lightning`.
+
+`nemotron-3.5-lightning` is carried despite an unstable smoke, including a 429
+from its provider. It is not excluded on a four-episode sample; the registered
+20% rule is applied to the rate the real run produces.
+
+**Excluded (one):** `z-ai/glm-5.3`. Its output omits `verify_memory_ids`,
+`intended_action`, `scale` and `uses_memory_ids` and substitutes keys of its own
+in 4 of 4 smoke episodes under the same request every other model answers. The
+exclusion is stated with those field names, not as a bare failure rate.
+
+**Grid:** 4 doses x 2 budgets x 2 worlds x 11 models x 25 = **4400 episodes**.
+With the six frontier models this gives **seventeen models across twelve
+organisations**.
+
+All hypotheses and failure criteria are unchanged.
