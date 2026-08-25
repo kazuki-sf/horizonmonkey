@@ -50,8 +50,8 @@ for w in WORLDS:
         qual.append((w, d, ak / an, mk / mn))
 V["H16"] = ("supported", f"at all {len(qual)} doses H24 admits; gaps "
             f"{round(100*min(a-b for _,_,a,b in qual))} to {round(100*max(a-b for _,_,a,b in qual))} points")
-V["H17"] = ("supported", "on-path $\\geq$ 0.90 at every admitted dose; "
-            f"lowest {round(100*min(a for _,_,a,_ in qual))}\\%")
+V["H17"] = ("supported", "on-path $\\geq$ 0.90 in every H24-admitted dose-by-world cell; "
+            f"lowest such cell {100*min(a for _,_,a,_ in qual):.0f}\\%")
 
 # H18: placement, model-matched to the six the swap arm was run on
 FRONT = ("claude-", "gpt-5.6")
@@ -110,7 +110,7 @@ for w in WORLDS:
     if "AB" in off and mids: h22 &= max(mids) <= off["AB"] + 1e-9
     seq.append(f"{round(100*off['0'])}--{round(100*off['AB'])}")
 V["H22"] = ("supported" if h22 else "failed",
-            f"off-path rises {seq[0]} and {seq[1]} points across the dose series, partial order intact")
+            f"off-path runs {seq[0]} and {seq[1]}\\% from dose 0 to dose AB; the registered partial order holds")
 
 # H23: on-path >= 0.90 at every dose in every world
 worst = min((cell([r for r in b2 if r["world"] == w and dose(r) == d])[:2]
@@ -119,8 +119,15 @@ worst = min((cell([r for r in b2 if r["world"] == w and dose(r) == d])[:2]
             key=lambda t: t[0] / t[1])
 V["H23"] = ("supported" if worst[0] / worst[1] >= 0.90 else "failed",
             f"lowest dose-by-world cell {worst[0]}/{worst[1]} = {round(100*worst[0]/worst[1])}\\%")
+def admitted(ceiling):
+    n = 0
+    for w in WORLDS:
+        for d in DOSES:
+            ak, an, mk, mn = cell([r for r in b2 if r["world"] == w and dose(r) == d])
+            if an >= 20 and mn >= 20 and 0.20 < mk / mn < ceiling: n += 1
+    return n
 V["H24"] = ("applied as registered", f"{len(qual)} of 8 dose-by-world cells admitted; "
-            "a 75\\% ceiling instead of 80 would admit none")
+            f"a 75\\% ceiling would admit {admitted(0.75)}, an 85\\% ceiling {admitted(0.85)}")
 
 # H25: per dose-world floor of 0.80
 def plan_rate(R):
@@ -137,7 +144,7 @@ V["H25"] = ("failed", f"{len(low)} of 8 dose-by-world cells below the 0.80 floor
 # H26: budget-1 rate within 15 points of budget 2
 p1, p2 = plan_rate(b1), plan_rate(b2)
 V["H26"] = ("supported" if abs(p1 - p2) * 100 <= 15 else "failed",
-            f"{round(100*p1)}\\% at one credit against {round(100*p2)}\\% at two, a {round(100*abs(p1-p2))}-point gap")
+            f"{100*p1:.1f}\\% at one credit against {100*p2:.1f}\\% at two, a {100*abs(p1-p2):.1f}-point gap")
 
 # H27: per dose-world, salience must lose, on matched denominators
 won = []
@@ -170,8 +177,8 @@ for m in sorted({r["model"] for r in b1}):
     C = [x for x in (choice(r) for r in b1 if r["model"] == m) if x]
     if C and sum(b for _, b in C) / len(C) >= sum(a for a, _ in C) / len(C): mw.append(m)
 V["H30"] = ("failed" if mw else "supported",
-            f"salience beats the plan in {len(mw)} of {len({r['model'] for r in b1})} models" if mw
-            else f"in 0 of {len({r['model'] for r in b1})} models does salience beat the plan, pooled over doses")
+            f"per model on matched denominators, salience beats the plan in {len(mw)} of {len({r['model'] for r in b1})}" if mw
+            else f"per model on matched denominators, 0 of {len({r['model'] for r in b1})}; the per-cell version is H27, which fails")
 
 OUT = os.path.join(ROOT, "paper", "figures", "hyp6.tex")
 hs = [f"H{i}" for i in range(16, 31)]

@@ -44,7 +44,7 @@ def wilson(k, n, z=1.96):
 def ptex(p):
     """LaTeX-format a p-value for use inside math mode."""
     if p >= 0.001: return f"{p:.3f}".rstrip("0").rstrip(".")
-    from math import floor, log10
+    from math import floor, log10, erfc
     e = floor(log10(p)); m = p / 10**e
     return f"{m:.1f}\\times 10^{{{e}}}"
 
@@ -60,8 +60,8 @@ def cmh(strata):
         den += n1 * n2 * M * (N - M) / (N * N * (N - 1))
     if den == 0: return None
     chi = (abs(num) - 0.5) ** 2 / den
-    from math import erf, sqrt
-    return 1 - erf(sqrt(chi / 2))
+    from math import erfc, sqrt
+    return erfc(sqrt(chi / 2))
 
 def fisher(a, b, c, d):
     """two-sided Fisher exact for [[a,b],[c,d]]"""

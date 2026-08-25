@@ -19,7 +19,7 @@ def fisher(a,b,c,d):
     n=a+b+c+d; r1,c1=a+b,a+c
     def pmf(x): return comb(c1,x)*comb(n-c1,r1-x)/comb(n,r1)
     p0=pmf(a); lo,hi=max(0,r1+c1-n),min(r1,c1)
-    return sum(pmf(x) for x in range(lo,hi+1) if pmf(x)<=p0+1e-12)
+    return sum(pmf(x) for x in range(lo,hi+1) if pmf(x) <= p0 * (1 + 1e-9))
 def cmh(strata):
     num=den=0.0
     for x1,n1,x2,n2 in strata:
