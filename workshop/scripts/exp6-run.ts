@@ -25,17 +25,26 @@ const MODELS = ["claude-opus-5","claude-sonnet-5","claude-haiku-4-5","gpt-5.6-so
  *  gpt-oss is OpenAI's open-weight release, which separates "the lab" from
  *  "the post-training regime". */
 const OPEN_MODELS = [
-  "meta-llama/llama-4-maverick",
-  "qwen/qwen3.5-397b-a17b",
-  "deepseek/deepseek-v3.1-terminus",
-  "mistralai/mistral-large-2512",
-  "moonshotai/kimi-k2.6",
-  "z-ai/glm-4.7",
-  "openai/gpt-oss-120b",
-  "nvidia/nemotron-3-super-120b-a12b",
-  "google/gemini-2.5-pro",
+  "google/gemini-3.7-flash",          // Google        2026-08-13
+  "x-ai/grok-4.6",                    // xAI           2026-08-12
+  "deepseek/deepseek-v4-pro-0813",    // DeepSeek      2026-08-12
+  "qwen/qwen3.8-max",                 // Alibaba       2026-08-03
+  "z-ai/glm-5.3",                     // Zhipu         2026-08-18
+  "moonshotai/kimi-k3",               // Moonshot      2026-07-16
+  "minimax/minimax-m3",               // MiniMax       2026-05-31
+  "nvidia/nemotron-3.5-lightning",    // NVIDIA        2026-08-11
+  "mistralai/mistral-medium-3-5",     // Mistral       2026-04-30
+  "tencent/hy3",                      // Tencent       2026-07-06
+  "meta-llama/llama-4-maverick",      // Meta          2025-04-05 (newest Meta on OpenRouter)
+  "openai/gpt-oss-120b",              // OpenAI open weights, the lab-vs-regime control
 ];
 const ARMS: Arm[] = ["drifted", "drifted-swap"];
+/** Evidence-based, uniform. The six frontier models used a median of 461 output
+ *  tokens on this task, p95 1832, max 4749 across all 2,700 episodes. 8000 is
+ *  non-binding for every one of them and gives the open pool 1.7x the worst
+ *  frontier case. A 32000 ceiling made several reasoning models generate until
+ *  the request timed out, which is what produced the earlier failure rates. */
+const OPEN_MAX_TOKENS = 8000;
 const BUDGET = process.argv.includes("--budget") ? Number(process.argv[process.argv.indexOf("--budget") + 1]) : 2;
 const OUT = "runs/exp6";
 
@@ -71,9 +80,9 @@ async function ask(model: string, system: string, user: string, schema: unknown,
     }
     if (model.includes("/")) {
       // OpenRouter, OpenAI-compatible chat completions
-      const or = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1" });
+      const or = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1", timeout: 120_000, maxRetries: 0 });
       const r = await or.chat.completions.create({
-        model, max_tokens: 32000,
+        model, max_tokens: OPEN_MAX_TOKENS,
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
         response_format: { type: "json_schema", json_schema: { name: "answer", strict: true, schema } },
       } as never) as never as { choices: { message: { content: string } }[]; usage: unknown };
@@ -85,7 +94,7 @@ async function ask(model: string, system: string, user: string, schema: unknown,
     } as never) as never as { output_text: string; usage: unknown };
     return { text: r.output_text, usage: r.usage };
   } catch (e) {
-    if (attempt >= 5) throw e;
+    if (attempt >= 3) throw e;
     await new Promise((r) => setTimeout(r, 1500 * attempt * attempt));
     return ask(model, system, user, schema, attempt + 1);
   }
@@ -123,9 +132,11 @@ async function episode(w: World, arm: Arm, model: string, run: number, variant: 
     // Uniform normalisation, applied to every model on every path: some models
     // wrap the object in a markdown fence. Nothing model-specific here.
     const clean = String(text).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
-    const answer = JSON.parse(clean) as Answer;
+    let answer: Answer;
+    try { answer = JSON.parse(clean) as Answer; }
+    catch (pe) { const err = new Error(`JSON parse failed: ${String(pe).slice(0, 120)}`) as Error & { raw?: string }; err.raw = clean.slice(0, 600); throw err; }
     if (!answer || typeof answer !== "object" || !Array.isArray(answer.verify_memory_ids))
-      throw new Error(`model returned no schema-valid object (content was ${JSON.stringify(String(text).slice(0, 60))})`);
+      { const err = new Error("model returned no schema-valid object") as Error & { raw?: string }; err.raw = clean.slice(0, 600); throw err; }
     const rec = {
       version: VERSION, world: w.key, arm, variant, dose: dose ?? (variant === "tempting" ? "AB" : "0"), model, run, budget: BUDGET,
       order: mems.map((m) => m.id), answer, usage,
@@ -174,7 +185,7 @@ pool(tasks.map((t) => async () => {
   done++;
   if (done % 20 === 0 || done === tasks.length) process.stdout.write(`\r  ${done}/${tasks.length}`);
   return r;
-}), 8).then((rs) => {
+}), process.argv.includes("--open") ? 14 : 8).then((rs) => {
   const n = (k: string) => rs.filter((r: never) => (r as Record<string, boolean>)[k]).length;
   console.log(`\ndone in ${((Date.now()-t0)/1000).toFixed(0)}s — ok ${n("ok")}, skipped ${n("skipped")}, errors ${n("err")}`);
 });

@@ -517,3 +517,70 @@ deleted before the registered run. All nine models are carried into the run; the
 exclusion stated rather than only its rate.
 
 All earlier hypotheses and failure criteria are unchanged.
+
+---
+
+## Amendment 8 — 24 August 2026, the model list was out of date, and the grid is widened
+
+### The list registered in Amendment 6 was stale
+
+It was assembled by filtering OpenRouter's catalogue on name substrings, without
+sorting by release date. Checking the dates afterwards:
+
+| registered in Amendment 6 | that lab's newest | gap |
+|---|---|---|
+| qwen/qwen3.5-397b-a17b | qwen/qwen3.8-max, 2026-08-03 | three minor generations |
+| deepseek/deepseek-v3.1-terminus | deepseek/deepseek-v4-pro-0813, 2026-08-12 | a major version |
+| z-ai/glm-4.7 | z-ai/glm-5.3, 2026-08-18 | a major version |
+| moonshotai/kimi-k2.6 | moonshotai/kimi-k3, 2026-07-16 | a major version |
+| nvidia/nemotron-3-super-120b-a12b | nvidia/nemotron-3.5-lightning, 2026-08-11 | five months |
+| google/gemini-2.5-pro | google/gemini-3.7-flash, 2026-08-13 | more than a year |
+
+Three organisations were missed entirely: **xAI**, **MiniMax** and **Tencent**.
+
+A 2026 paper claiming generality across labs cannot rest on each lab's
+year-old release. The list is replaced with **each organisation's newest model
+that supports structured output**, chosen by release date, excluding vision,
+coding and audio variants:
+
+`google/gemini-3.7-flash`, `x-ai/grok-4.6`, `deepseek/deepseek-v4-pro-0813`,
+`qwen/qwen3.8-max`, `z-ai/glm-5.3`, `moonshotai/kimi-k3`, `minimax/minimax-m3`,
+`nvidia/nemotron-3.5-lightning`, `mistralai/mistral-medium-3-5`, `tencent/hy3`,
+`meta-llama/llama-4-maverick`, `openai/gpt-oss-120b`.
+
+Eight were released in the last six weeks. `meta-llama/llama-4-maverick` is
+dated 2025-04-05 and is kept because it is the newest Meta model OpenRouter
+serves; that is stated rather than hidden. `openai/gpt-oss-120b` is kept as the
+control that separates the organisation from the post-training regime.
+
+Twelve models from twelve organisations, which with the original six gives
+**eighteen models across thirteen organisations**.
+
+### The grid is widened to match the frontier design
+
+Amendment 6 registered doses {0, A} only. The frontier six were run at all four
+doses, so a two-dose open-model grid could not test H22 or H23 on the same
+design. With the four doses and both budgets:
+
+**4 doses x 2 budgets x 2 worlds x 12 models x 25 = 4800 episodes.**
+
+H22, H23, H28, H29 and H30 are evaluated on this grid exactly as registered.
+
+### max_tokens, fixed by measurement rather than guess
+
+The 32000 ceiling set in Amendment 7 made several reasoning models generate
+until the request timed out, which is what produced their apparent failure
+rates. Measuring the 2,700 frontier episodes: median output 461 tokens, p95
+1832, maximum 4749. **The ceiling is 8000 for every model on every path**:
+non-binding for all six frontier models by a factor of 1.7 on their worst case,
+and generous for the rest. A model that cannot answer inside 8000 tokens is
+failing the task, not being truncated by the harness.
+
+### Execution procedure
+
+Models are run **one at a time**, not as a single pooled job, so that stopping
+on a fault costs one model rather than all of them. Each model is smoke-tested
+on the real prompt and the real schema first; only parse success is read, and
+the smoke episodes are deleted before the registered run.
+
+All hypotheses and failure criteria are unchanged.
