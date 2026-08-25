@@ -73,7 +73,8 @@ async function ask(model: string, system: string, user: string, schema: unknown,
       // OpenRouter, OpenAI-compatible chat completions
       const or = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1" });
       const r = await or.chat.completions.create({
-        model, messages: [{ role: "system", content: system }, { role: "user", content: user }],
+        model, max_tokens: 32000,
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
         response_format: { type: "json_schema", json_schema: { name: "answer", strict: true, schema } },
       } as never) as never as { choices: { message: { content: string } }[]; usage: unknown };
       return { text: r.choices[0].message.content, usage: r.usage };
@@ -119,7 +120,12 @@ async function episode(w: World, arm: Arm, model: string, run: number, variant: 
   const user = dose ? situationDose(w, mems, BUDGET, dose) : situation6(w, mems, BUDGET, variant);
   try {
     const { text, usage } = await ask(model, w.system, user, schema6(w));
-    const answer = JSON.parse(text) as Answer;
+    // Uniform normalisation, applied to every model on every path: some models
+    // wrap the object in a markdown fence. Nothing model-specific here.
+    const clean = String(text).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+    const answer = JSON.parse(clean) as Answer;
+    if (!answer || typeof answer !== "object" || !Array.isArray(answer.verify_memory_ids))
+      throw new Error(`model returned no schema-valid object (content was ${JSON.stringify(String(text).slice(0, 60))})`);
     const rec = {
       version: VERSION, world: w.key, arm, variant, dose: dose ?? (variant === "tempting" ? "AB" : "0"), model, run, budget: BUDGET,
       order: mems.map((m) => m.id), answer, usage,

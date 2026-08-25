@@ -467,3 +467,53 @@ its rate stated**, not silently carried with a smaller denominator. Error rates
 are reported per model whatever they are.
 
 All earlier failure criteria continue to bind. Nothing already run is re-scored.
+
+---
+
+## Amendment 7 — 24 August 2026, a real capability smoke test, and a correction
+
+Amendment 6 said a pre-run availability probe had been done. **It was the wrong
+probe.** It sent a fixed one-token prompt asking for `{"ok":true}` and checked
+that an endpoint answered. It did not test whether a model can execute this
+experiment's actual task: a 2,200-character situation, an eight-field schema,
+and a free-text rationale.
+
+Running the real prompt instead produced a very different picture, and the first
+reading of it was wrong in a way worth recording:
+
+| model | first attempt | after uniform fixes | what was actually wrong |
+|---|---|---|---|
+| z-ai/glm-4.7 | 0/4 | 2/2 | it wraps the object in a markdown fence |
+| meta-llama/llama-4-maverick | 1/4 | 4/4 | rationale exceeded a 16k token ceiling |
+| google/gemini-2.5-pro | 3/4 | 4/4 | one null content |
+| qwen3.5, gpt-oss-120b | 3/4 | ok | truncation at the same ceiling |
+
+**glm-4.7 was about to be reported as unusable with a 76% failure rate.** It is
+not unusable. The failure was in this repository's OpenRouter client, and
+publishing that number would have been a false claim about a third party's
+model. The 20% exclusion rule registered in Amendment 6 is sound, but it can
+only be applied after the integration has been shown not to be the cause.
+
+### The two fixes, both uniform
+
+1. `max_tokens` is set to 32000 on the OpenRouter path. It was absent there and
+   present on the Anthropic path, so the three request paths were not
+   comparable. They now are.
+2. A markdown code fence is stripped before `JSON.parse` on **every** response
+   from **every** model on **every** path. Well-formed responses are unaffected.
+
+**The schema is not changed.** Constraining the `rationale` field would have
+fixed the truncations too and would have invalidated comparison with the 2,700
+frontier episodes already collected. The task text and the schema are identical
+for all fifteen models.
+
+### Procedure, corrected
+
+Model eligibility is decided by a smoke test that runs **the real prompt and the
+real schema**, and reads **only whether a schema-valid object came back**. The
+scored outcome of a smoke episode is never read, and every smoke episode is
+deleted before the registered run. All nine models are carried into the run; the
+20% rule is applied to the rates the real run produces, with the cause of any
+exclusion stated rather than only its rate.
+
+All earlier hypotheses and failure criteria are unchanged.
