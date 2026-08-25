@@ -32,7 +32,7 @@ were part of what the old title summarized.
   intervention does not isolate internal plan state from topical salience or
   directive framing.
 - **Register/quantification-controlled constraint effect with a pre-registered
-  independent replication** (1,680 episodes; 1,440 in the contrast): +31.9
+  disjoint-seed replication run** (1,680 episodes; 1,440 in the contrast): +31.9
   pooled, +29.2 primary, +34.6 replication, positive within both registers and
   all six wording families; magnitude varies from −8.8 to +91.3 by model.
 - **Prohibition increment**: +18.3 points beyond the quantified negative.
@@ -64,7 +64,7 @@ were part of what the old title summarized.
 ## New preregistered experiments and replication
 
 Experiments 7–10 were pre-registered before their first model calls with
-committed analysis scripts; Experiment 10 includes an independent replication
+committed analysis scripts; Experiment 10 includes a disjoint-seed replication run
 opened only after the primary analysis was committed. The scorer's
 non-independence (it is one of the six consolidator models) and the absence of
 human validation are disclosed.

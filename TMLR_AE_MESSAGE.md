@@ -8,8 +8,8 @@
 > verification") was falsified by our own pre-registered length-matched
 > control, and the revised manuscript withdraws that claim; it also adds a
 > randomized working-plan assignment experiment, a register- and
-> quantification-controlled test of the semantic-constraint effect with an
-> independent replication, and clarified limitations.
+> quantification-controlled test of the semantic-constraint effect with a
+> pre-registered disjoint-seed replication run, and clarified limitations.
 >
 > We have prepared an updated manuscript that preserves the same research
 > question but is materially more accurate. Since TMLR recommends waiting

@@ -73,7 +73,7 @@ post-treatment.
 **Effect.** Exp 10, slot grammar holding numeric claims and clause slots
 constant, 6 wording families, length matched within register.
 Removed **303/480** against retained **300/960** = **+31.9 points**, χ² = 168.5.
-**Primary +29.2, pre-registered independent replication +34.6** (opened only
+**Primary +29.2, pre-registered disjoint-seed replication run +34.6** (opened only
 after the primary analysis was committed).
 Within fluent **+40.6**, within telegraphic **+23.1**. All 6 families positive
 (**+22.0 to +40.3**).
