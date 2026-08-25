@@ -671,3 +671,29 @@ one, so no model is analysed on a mixture of the two.
 
 The 20% exclusion rule still binds, and is now applied to a rate measured after
 transport failures have been retried rather than counted as refusals.
+
+---
+
+## Amendment 11 — 25 August 2026, nemotron cannot be run, and why that is not a claim about it
+
+`nvidia/nemotron-3.5-lightning` did not complete. Of its failures, the dominant
+cause was **HTTP 429 from its upstream provider**, not anything the model
+produced. Backing off hard on 429 (12 seconds times the attempt, five attempts,
+concurrency reduced to three) cut 429s from 8 to 1 in the error log but the run
+then stalled: no new episode for ten minutes, and a single isolated diagnostic
+call was itself refused with 429.
+
+It reached **68 episodes**, and its intent-aligned cell holds **9**, below the
+20-episode floor this pre-registration fixed for H28 before any data existed. It
+would therefore not have been evaluated even if the run were left grinding.
+
+**It is reported as not run, with the reason stated as provider throttling.**
+It is *not* reported as a failure of the model, and its 68 episodes are not used
+to characterise it. Two of the seven integration faults already recorded in
+Amendments 7, 9 and 10 were exactly this mistake caught in time: a transport
+condition read as a limitation of somebody else's model. This is the same
+mistake, declined a third time.
+
+The study therefore covers **sixteen models across eleven organisations**:
+Anthropic, OpenAI (frontier and open-weight), Google, xAI, DeepSeek, Alibaba,
+Meta, Mistral, Moonshot, MiniMax and Tencent.

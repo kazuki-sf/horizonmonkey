@@ -43,7 +43,7 @@ const ARMS: Arm[] = ["drifted", "drifted-swap"];
  *  non-binding for every one of them and gives the open pool 1.7x the worst
  *  frontier case. A 32000 ceiling made several reasoning models generate until
  *  the request timed out, which is what produced the earlier failure rates. */
-const ATTEMPTS = 3;   // uniform: a non-conforming body is retried for every model
+const ATTEMPTS = 5;   // uniform: a non-conforming body is retried for every model
 const OPEN_MAX_TOKENS = 16000;   // matches the Anthropic path exactly
 const BUDGET = process.argv.includes("--budget") ? Number(process.argv[process.argv.indexOf("--budget") + 1]) : 2;
 const OUT = "runs/exp6";
@@ -180,7 +180,10 @@ async function episode(w: World, arm: Arm, model: string, run: number, variant: 
       return { ok: true } as const;
     } catch (e) {
       last = e;
-      if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, 1200 * attempt));
+      // 429 is a provider throttling us, not the model refusing. Back off hard
+      // rather than counting it as a model failure. Uniform for every model.
+      const throttled = /\b429\b|rate.?limit/i.test(String(e));
+      if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, (throttled ? 12000 : 1200) * attempt));
     }
   }
   // Pre-registered: a failure that survives every attempt is recorded and
@@ -222,7 +225,7 @@ pool(tasks.map((t) => async () => {
   done++;
   if (done % 20 === 0 || done === tasks.length) process.stdout.write(`\r  ${done}/${tasks.length}`);
   return r;
-}), process.argv.includes("--open") ? 14 : 8).then((rs) => {
+}), Number(process.argv.includes("--concurrency") ? process.argv[process.argv.indexOf("--concurrency") + 1] : (process.argv.includes("--open") ? 14 : 8))).then((rs) => {
   const n = (k: string) => rs.filter((r: never) => (r as Record<string, boolean>)[k]).length;
   console.log(`\ndone in ${((Date.now()-t0)/1000).toFixed(0)}s — ok ${n("ok")}, skipped ${n("skipped")}, errors ${n("err")}`);
 });
