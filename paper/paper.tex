@@ -11,6 +11,7 @@
 \input{figures/macros}
 \IfFileExists{figures/macros2.tex}{\input{figures/macros2}}{}
 \IfFileExists{figures/macros3.tex}{\input{figures/macros3}}{}
+\IfFileExists{figures/macros6.tex}{\input{figures/macros6}}{}
 
 \title{Verification Goes Where the Agent Is Already Looking:\\
 Intent-Aligned Triage of Inherited Memory Under Budget}
@@ -25,13 +26,15 @@ A long-horizon agent inherits organizational memory it did not write. Giving
 every record a provenance link does not make that memory safe: an agent holding
 hundreds of inherited beliefs can follow only a few links before it acts, so the
 reliability question is not whether provenance exists but which links get
-followed. We put six production models in a controlled scenario where one of six
+followed. We put production models in a controlled scenario where one of six
 inherited memories has lost a true negative caveat and at most $k$ source records
-can be pulled before committing, and report five pre-registered experiments.
+can be pulled before committing, and report six pre-registered experiments over
+three domains and \SixModels{} models from \SixOrgs{} organizations.
 
 \textbf{Where scarce verification goes.} Allocation tracks the agent's current
-plan. Across \ExpOneN{} episodes the corrupted memory is verified in
-\AlignedK/\AlignedN{} episodes whose first-pass intent it backs and
+plan. Across \ExpOneN{} episodes, pooled over the clean, drifted and
+triage-instructed arms, the memory whose source would resolve the question is
+verified in \AlignedK/\AlignedN{} episodes whose first-pass intent it backs and
 \MisK/\MisN{} otherwise, with no counterexample; moving the same corruption
 onto the intended path makes it caught 75/75. We report this as an allocation
 \emph{signature} rather than a causal claim: intent and lookups are named in the
@@ -57,6 +60,29 @@ and a body with no negative content left appears in \FivePurelyPositive{}
 chain-generations. In the consolidation setup we test, the failure that
 appears instead is a memory that stays factually accurate while losing the
 limits that made it safe to act on.
+
+\textbf{How far it reaches, and where it breaks.} The allocation signature is
+not an artefact of one scenario or of two laboratories' post-training. Across
+\SixEpisodes{} further episodes in two unrelated domains, the corrupted memory is
+verified in \SixOnPathTwoK/\SixOnPathTwoN{} of the episodes whose intent it
+backs, at or above 96\% in all \SixModels{} models and exactly 100\% in
+\SixPerfectModels{}. Two boundaries are new and are reported as failures because
+the pre-registration fixed in advance that they would be. A second measure,
+whether any credit at all reaches a memory backing the stated intent, falls from
+\SixPlanTwoPct\% with two credits to \SixPlanOnePct\% with one, so
+\emph{the memory behind the agent's own plan is always checked} is a property of
+having a spare credit rather than of the policy; and \SixBelowFloor{} of
+\SixModels{} models, \SixBelowFloorModel{}, falls below the floor registered for
+that condition, and \SixHTwentyFiveBelow{} of \SixHTwentyFiveCells{}
+dose-by-world cells do. The title claim itself fails in one cell: at
+\SixSalienceWonCell{}, where the alternative has been made maximally live, a
+single credit goes to the topically salient memory \SixSalienceWonSalPct\% of
+the time against \SixSalienceWonPlanPct\% to the agent's own plan. Pooled over
+every cell the plan still leads \SixChoicePlanPct\% to \SixChoiceSalientPct\%,
+and Experiment 1's within-arm contrast reproduces at all
+\SixQualifyingDoses{} locations the pre-registration fixed in advance --- but
+the claim is not exceptionless, and the exception is where the pre-registration
+said to look.
 
 All hypotheses and scoring rules were committed before the corresponding model
 calls; every number reproduces from released episode files with no API access.
@@ -124,7 +150,7 @@ reversible if its hidden caveat is real, but not the direction the agent is
 likely to pick. A verification policy that follows risk should check it. A
 verification policy that follows intent will check something else.
 
-Our findings, from seventeen hypotheses pre-registered across five experiments,
+Our findings, from thirty-two hypotheses pre-registered across six experiments,
 each committed before that experiment's first model call:
 
 \begin{itemize}
@@ -364,6 +390,8 @@ Wilson 95\% intervals; pairwise contrasts use two-sided Fisher exact tests.
 
 \input{exp45_body}
 
+\input{exp6_body}
+
 \section{Limitations}
 \input{limitations_body}
 
@@ -377,8 +405,8 @@ budget (\FullBudgetK{} of \TotalEpisodes{} in Experiment 1), reliability
 differences came almost entirely from \emph{direction} --- whether scarce
 attention reached the belief that was silently wrong, or only the beliefs
 behind the plan the agent had already formed. That allocation is locally rational
-and costly once the context shifts, and Experiments 3--5 let us say which parts
-of that we have established.
+and costly once the context shifts, and Experiments 3--6 let us say which parts
+of that we have established, and where it stops holding.
 
 Randomizing what provenance is carried into a later decision moves the
 corrupted-direction rate by \ThreeBDiff{} points and removes every unguarded
@@ -407,6 +435,27 @@ story usually told to motivate it is not. Something other than the
 consolidation process tested here would have to produce this particular
 corrupted belief for an agent to walk past it.
 
+Experiment 6 gives the signature its scope and its edges. Across
+\SixEpisodes{} episodes in two further domains and \SixModels{} models from
+\SixOrgs{} organizations, including a laboratory's open-weight release beside its
+own frontier line, the corrupted memory is verified in
+\SixOnPathTwoK/\SixOnPathTwoN{} of the episodes whose intent it backs. It is not
+an artefact of one scenario or of two organizations' post-training. Two edges
+appear at the same time. Its ceiling is invariant to how salient the alternative
+is made and its floor is not, rising from \SixOffRelZero\% to \SixOffRelAB\%
+across the dose series; and the invariant depends on the second credit. Whether
+any credit reaches a memory backing the stated intent falls from
+\SixPlanTwoPct\% with two credits to \SixPlanOnePct\% with one, with
+\SixBelowFloorModel{} below the floor we registered for that condition. The
+sentence this paper is titled after survives that: with a single credit the
+agent must choose between the memory behind its plan and the memory the
+situation foregrounds, and pooled over every cell the plan leads
+\SixChoicePlanPct\% to \SixChoiceSalientPct\%. It is not exceptionless: at
+\SixSalienceWonCell{}, the cell where the alternative is made maximally live,
+the salient memory takes \SixSalienceWonSalPct\% against the plan's
+\SixSalienceWonPlanPct\%, and the pre-registration named that as the condition
+under which the framing is wrong.
+
 What follows for systems is not a better-behaved agent. Every model we tested shows a
 verification-allocation signature aligned with its current plan, and spending a
 scarce budget that way is correct for the decision in front of it. The gap is architectural: retrieval ranks records by relevance to
@@ -420,9 +469,11 @@ with the lineage depth, scope breadth, and last-verified time to run it.
 \section{Scenario text}
 The complete system prompt, memory lineages for both corruption targets, the
 hidden source records, and the pre-registered scoring rules are released
-verbatim in the repository. Five experiments are covered by \emph{three}
-pre-registration documents, each committed before the first model call of the
-experiments it covers:
+verbatim in the repository. Six experiments are covered by \emph{four}
+pre-registration documents. The first three were committed before the first
+model call of the experiments they cover; the fourth was committed before
+Experiment 6's first call and then amended eleven times during it, each
+amendment dated, each recording what had been seen at that point:
 
 \begin{itemize}\itemsep1pt
 \item \path{runs/paper/preregistration.md} --- Experiment 1 (H1--H5).
@@ -431,6 +482,12 @@ experiments it covers:
   in a single document, with the two amendments made while the relevant
   experiment's episode count was zero, and the record of H15 becoming
   unrunnable.
+\item \path{workshop/PREREGISTRATION-EXP6.md} --- Experiment 6 (H16--H30), with
+  eleven amendments. Six of them extend a grid the document's own stopping rule
+  said would not be extended; two record scenario redesigns made after a pilot;
+  one records a manipulation check that failed; one records a model excluded and
+  the evidence for excluding it. All are dated and none is retroactive to
+  episodes already collected.
 \end{itemize}
 
 The scenario text is byte-identical to what every model received. The first two

@@ -27,8 +27,14 @@ for (const w of WORLDS) {
   // 4. targets: aggressive target backed by exactly 1 action; swap target is in the 2-memory action
   if ((w.backing[w.actions.find(a => w.backing[a].includes(w.target))!] ?? []).length !== 1)
     bad("target is not the sole backer of its action");
-  if (!w.backing[w.actions.find(a => w.backing[a].includes(w.swapTarget))!].length)
-    bad("swapTarget not in backing");
+  {
+    const swapAction = w.actions.find(a2 => w.backing[a2].includes(w.swapTarget));
+    if (!swapAction) bad("swapTarget backs no action");
+    // The comment used to claim this asserted the swap target sits in the
+    // two-memory action; the code only checked a non-empty array, which is
+    // always true. Report the real arity instead of asserting a false one.
+    else console.log(`  swapTarget ${w.swapTarget} backs ${swapAction} (${w.backing[swapAction].length} backer(s))`);
+  }
 
   // 5. every memory has a source in every arm; the CORRUPTED memory's source
   //    must carry an explicit prohibition, so verifying it actually recovers something

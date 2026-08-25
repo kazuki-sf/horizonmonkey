@@ -18,7 +18,7 @@ def dose_of(rec):
     return "AB" if rec.get("variant") == "tempting" else "0"
 
 rows = [json.load(open(f)) for f in glob.glob("runs/exp6/*.json") if "ERROR" not in f]
-rows = [r for r in rows if r["arm"] == "drifted"]          # the dose series is the drifted arm only
+rows = [r for r in rows if r["arm"] == "drifted" and r.get("budget", 2) == 2]   # the dose series is the drifted arm at budget 2; H22/H23/H24 were registered before budget 1 existed
 errs = glob.glob("runs/exp6/*.ERROR.json")
 
 cells = collections.defaultdict(list)

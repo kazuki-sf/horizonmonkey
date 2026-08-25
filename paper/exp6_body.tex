@@ -1,0 +1,179 @@
+\section{Experiment 6: how far does the allocation signature reach?}
+\label{sec:six}
+
+Experiments 1--5 run on one scenario and six models from two organizations.
+Two readings survive that evidence equally well. The allocation signature may be
+a property of an agent acting under a verification budget, or it may be a
+property of this scenario's structure and of how two laboratories post-train
+their frontier line. Experiment 6 separates them.
+
+It also tests the claim in this paper's title, which the earlier experiments
+could not. With a budget of two lookups an agent can verify both the memory
+behind its own plan and the memory the situation makes salient, so every result
+so far is equally consistent with \emph{verification follows topical relevance,
+and the plan's memory happens to be relevant too}. A budget of one forces the
+choice, and the two accounts then predict opposite things.
+
+Everything below was pre-registered in \path{workshop/PREREGISTRATION-EXP6.md}
+before the corresponding calls, in eleven dated amendments that record what was
+seen at each point, including the failures.
+
+\subsection{Design}
+
+Two new worlds, structurally isomorphic to Experiment 1 and audited to be so by
+\path{workshop/scripts/exp6-audit.ts}: an on-call reliability agent at a
+payments provider, and a sourcing agent at a hardware manufacturer. Each has six
+inherited memories inside the same length band this paper uses throughout, five candidate
+actions, exactly one action backed by two memories, one memory whose true
+negative caveat the drifted arm has lost, and hidden source records carrying the
+numbers.
+
+Salience is manipulated in \SixDoses{} doses. \texttt{situationTempting}
+differs from the base situation by exactly two substituted clauses, so those
+clauses form a two-level factor and the four cells are derived mechanically
+from the two registered strings; the audit asserts that dose 0 and dose AB
+reproduce them byte for byte. The verification budget is 2 or 1.
+
+\SixModels{} models across \SixOrgs{} organizations: Anthropic, OpenAI's
+frontier line and its open-weight release, Google, xAI, DeepSeek, Alibaba, Meta,
+Mistral, Moonshot, MiniMax and Tencent. \texttt{gpt-oss-120b} is deliberate: the
+same organization as three models already tested, different weights and
+post-training, so it separates the laboratory from the training regime.
+
+\SixEpisodes{} episodes and \SixFailures{} schema violations in the analysed
+set. A seventeenth model, \texttt{nvidia/nemotron-3.5-lightning}, is excluded
+and reported in \S\ref{sec:sixlimits}; its \SixNotRunEpisodes{} episodes and
+\SixNotRunFailures{} failures are held outside the analysed set and are not
+counted in that zero. First pass only, as in Experiment 4.
+
+\subsection{The on-path invariant is not a property of two laboratories}
+
+At budget 2, the corrupted memory is verified in \SixOnPathTwoK/\SixOnPathTwoN{}
+of the episodes whose first-pass intent it backs. \SixPerfectModels{} of the
+\SixEvaluatedModels{} models are at exactly 100\% when pooled across cells, and
+the lowest pooled rate is \SixWorstOnPathModel{} at \SixWorstOnPathPct\%.
+
+H28 was registered on cells, not on pooled models: at or above 0.90 ``in every
+model \emph{and every cell}'' with at least 20 intent-aligned episodes.
+Evaluated that way, \SixHTwentyEightBelow{} of \SixHTwentyEightCells{} cells
+falls below the floor --- \SixHTwentyEightWorstCell{}, at
+\SixHTwentyEightWorstK/\SixHTwentyEightWorstN{} =
+\SixHTwentyEightWorstPct\%. Pooling hides it, and pooling is not what was
+registered, so both are given here.
+
+The placement manipulation replicates and is larger than in Experiment 1. The
+swap arm was run for \SixSwapModels{} models only, so the comparison is
+restricted to those same \SixSwapModels{}: moving the same corruption onto the
+memory backing the action the agent already intends takes verification from
+\SixMatchedRelOffK/\SixMatchedRelOffN{} to
+\SixMatchedRelOnK/\SixMatchedRelOnN{} in the reliability world and from
+\SixMatchedProcOffK/\SixMatchedProcOffN{} to
+\SixMatchedProcOnK/\SixMatchedProcOnN{} in procurement, against Experiment 1's
+92/150 to 75/75.
+
+\subsection{The off-path rate is close to a step function}
+
+What moves with salience is the other half of the budget. H22 was registered as
+a partial order, dose 0 below each single-clause dose and both below dose AB, and
+it holds: \SixOffRelZero\%, \SixOffRelA\%, \SixOffRelB\%, \SixOffRelAB\% in
+reliability and \SixOffProcZero\%, \SixOffProcA\%, \SixOffProcB\%,
+\SixOffProcAB\% in procurement. It is not monotone in dose \emph{index} --- the
+two single-clause doses are not ordered against each other, and in reliability
+the second is far below the first --- and the registered hypothesis never
+claimed it was.
+
+The rise is steep. Two hand-written situations were tried before the dose series
+and neither landed in the intermediate regime: the first left the intent-aligned
+cell empty, the second put both cells at ceiling. That is why the dose series
+replaced them, and H21, the manipulation check registered for the second
+attempt, is a \emph{failed} pre-registered hypothesis, reported as such.
+
+Experiment 1's within-arm contrast does reproduce, at the location H24 fixed in
+advance. \SixQualifyingDoses{} dose-by-world cells satisfy the admissibility
+rule, and H16 is supported in \SixHSixteenSupported{} of them, with on-path
+minus off-path between \SixHSixteenMinGapPct{} and \SixHSixteenMaxGapPct{}
+points. That rule is worth reading sceptically: because H23 puts the on-path
+rate near 100\% everywhere, an admissibility band with an upper bound below
+100\% makes H16 close to arithmetically safe wherever it applies, and moving
+the bound from 80\% to 75\% would empty the qualifying set entirely. The
+contrast reproduces; the rule that located it was not a demanding one.
+
+\subsection{Budget 1: the invariant is a property of having a spare credit}
+
+With two credits, \texttt{intent\_share} is exactly 0.5 in the large majority of
+episodes: one credit goes to the agent's own plan and one goes to whatever else
+the situation makes salient. The two credits do different jobs, which is why a
+budget of two cannot separate intent from relevance.
+
+With one credit the agent must choose. Measured now on \emph{any} memory backing
+the stated intent rather than only on the corrupted one --- a different quantity
+from the \SixOnPathTwoK/\SixOnPathTwoN{} above, and the one a single credit can
+speak to --- it goes to the plan in \SixPlanOneK/\SixPlanOneN{} of episodes,
+against \SixPlanTwoK/\SixPlanTwoN{} at budget 2. \emph{The memory behind the agent's own
+plan is always checked} is therefore a statement about having a spare credit,
+not about the allocation policy, and this paper's earlier phrasing is corrected
+accordingly.
+
+H25 was registered as a statement about cells: at least 80\% ``at every dose in
+both worlds''. \SixHTwentyFiveBelow{} of \SixHTwentyFiveCells{} dose-by-world
+cells fall below that floor, \SixHTwentyFiveLowCells{}. Read per model instead,
+\SixBelowFloor{} of \SixModels{} is below it, \SixBelowFloorModel{}, at
+\SixOpusPlanPct\%, against \SixOtherPlanLoPct\% to \SixOtherPlanHiPct\% for the
+rest. The registered unit is the cell, and on that unit H25 fails in two of
+eight; the per-model view locates where the failure concentrates and is not the
+registered test.
+
+\textbf{And the direction fails too, in one cell.} H25's falsification clause
+named the condition: if the credit goes more often to the topically salient
+off-path memory than to the agent's plan at any dose, the framing is wrong at
+budget 1 and is to be reported as wrong here rather than in a limitation. On the
+registered subset --- episodes where the salient memory does not back the stated
+intent, with both quantities on that same denominator --- it does, at
+\SixSalienceWonCell{}: the plan takes \SixSalienceWonPlanPct\% of
+\SixSalienceWonN{} choices and the salient memory \SixSalienceWonSalPct\%.
+It is \SixSalienceCellsWon{} of \SixHTwentyFiveCells{} cells, and pooled over
+all of them the plan still leads \SixChoicePlanPct\% to
+\SixChoiceSalientPct\%; but the cell where it reverses is the one where the
+alternative has been made maximally live, which is the condition the title claim
+is about. \SixBelowFloorModel{}, measured on that same common denominator, is
+\SixOpusPlanMatchedPct\% plan against \SixOpusSalientMatchedPct\% salient.
+
+An earlier draft of this section reported ``in 0 of 16 models does salience
+win''. That figure compared a restricted numerator against an unrestricted
+denominator and is withdrawn.
+
+\subsection{What this does and does not establish}\label{sec:sixlimits}
+
+It establishes that the allocation signature is not an artefact of one scenario
+or of two organizations' post-training, that its ceiling is invariant to how
+salient the alternative is made while its floor is not, and that under the one
+budget that forces a choice, intent beats topical relevance in every model
+tested.
+
+It does not establish that the effect is exceptionless, and under one condition
+it is falsified. \SixShortOfPerfect{} models are short of 100\% on-path at
+budget 2 and one cell of \SixHTwentyEightCells{} is below the registered floor;
+H25 fails in \SixHTwentyFiveBelow{} of \SixHTwentyFiveCells{} cells; and at
+\SixSalienceWonCell{} topical salience beats the plan outright. It also does not
+evaluate a remedy: the verification scheduler this paper argues for is still a
+design implication and not a result.
+
+Two comparisons deserve a caveat the reader should not have to find. The
+placement contrast moves the corruption, but the swap arm also puts one visible
+caveat on screen and lengthens that memory's body well beyond the band the other
+five sit in, so it is not a one-variable manipulation in the way Experiment 4's
+arms are. And the dose series conditions on \texttt{intent\_aligned}, which the
+dose itself moves, so those cells share the post-treatment selection problem
+\S\ref{sec:qualifier} raises about its own stratified analysis.
+
+Two properties of the measurement are worth stating, with their limits.
+\path{workshop/analysis/exp6_validate_stored.py} re-applies the runner's current
+schema validator to every stored episode, including those written before that
+validator existed, and none fails, so the frontier and open-model sets are
+comparable on the schema. And of \SixCredits{} credits in the drifted arm,
+\SixAmbiguous{} could be attributed to more than one memory. That second check
+is weak by construction --- a credit names one id, so ambiguity would require a
+model to emit two inside one string --- and it says nothing about whether a
+credit was matched to the memory the model meant. The same audit reports
+\SixUnresolvable{} credits that match no memory at all, which are scored as
+spent and not on target.
