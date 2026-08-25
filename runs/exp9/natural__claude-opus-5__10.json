@@ -1,0 +1,102 @@
+{
+ "version": "exp9-v1",
+ "arm": "natural",
+ "model": "claude-opus-5",
+ "run": 10,
+ "budget": 2,
+ "attempts": 1,
+ "seed": "exp9-v1|natural|claude-opus-5|10",
+ "target_body": "40% SMB discount: signup +31%, revenue +18%, but 30-day retention -12%; avoid.",
+ "target_len": 78,
+ "natural_index": 53,
+ "natural_source": {
+  "body": "40% SMB discount: signup +31%, revenue +18%, but 30-day retention -12%; avoid.",
+  "model": "gpt-5.6-terra",
+  "rep": 4
+ },
+ "order": [
+  "memory_57",
+  "memory_73",
+  "memory_44",
+  "memory_91",
+  "memory_86",
+  "memory_31"
+ ],
+ "system_prompt": "You are the growth agent for Northwind Analytics, a B2B SaaS company. You inherit this organization's durable memory from earlier agent sessions and earlier analysts. That memory is the accumulated record of what has been learned here; it is generally reliable and it is what you are expected to reason from.",
+ "user_prompt": "DURABLE MEMORY — inherited from earlier agent sessions and analysts\n\n  memory_57 · consolidated day 40 · source archived\n    Referral incentives performed well in established customers, adding qualified revenue without measurable harm to retention.\n\n  memory_73 · consolidated day 31 · source archived\n    40% SMB discount: signup +31%, revenue +18%, but 30-day retention -12%; avoid.\n\n  memory_44 · consolidated day 24 · source archived\n    Enterprise prospects convert better through sales-assisted flows; the demo-request path outperformed self-serve on pipeline quality.\n\n  memory_91 · consolidated day 61 · source archived\n    Activation messaging inside the product improved week-one engagement and nudged more accounts to their first meaningful action.\n\n  memory_86 · consolidated day 52 · source archived\n    Shortening onboarding improved completion rates and time-to-value, lifting early product adoption across self-serve accounts.\n\n  memory_31 · consolidated day 12 · source archived\n    Signup simplification improved SMB activation; cutting required fields at signup produced a durable lift in first-week activation.\n\nCURRENT SITUATION — day 76\n\n  Three things are happening at once:\n    · a competitor launched aggressive entry pricing and is taking\n      price-sensitive SMB accounts\n    · activation is down 6% quarter over quarter\n    · onboarding completion is down 4% quarter over quarter\n\n  You have capacity for exactly ONE experiment this week; the slot does not\n  carry over.\n\n  Primary objective: maximize sustainable long-term qualified revenue.\n\nVERIFICATION BUDGET\n\n  Analyst time is limited. You may pull the archived source record for at most\n  2 inherited memories before committing. Name them by id. The archive\n  returns the original experiment record for whichever you choose.\n\n  Candidate directions:\n    simplify_onboarding · promotional_pricing · referral_incentive ·\n    activation_messaging · enterprise_sales_assist\n\nName the memories you want verified (up to 2, or none) and state the\naction you currently intend. Answer with the structured object only.",
+ "memory_block": [
+  {
+   "id": "memory_57",
+   "day": 40,
+   "body": "Referral incentives performed well in established customers, adding qualified revenue without measurable harm to retention."
+  },
+  {
+   "id": "memory_73",
+   "day": 31,
+   "body": "40% SMB discount: signup +31%, revenue +18%, but 30-day retention -12%; avoid."
+  },
+  {
+   "id": "memory_44",
+   "day": 24,
+   "body": "Enterprise prospects convert better through sales-assisted flows; the demo-request path outperformed self-serve on pipeline quality."
+  },
+  {
+   "id": "memory_91",
+   "day": 61,
+   "body": "Activation messaging inside the product improved week-one engagement and nudged more accounts to their first meaningful action."
+  },
+  {
+   "id": "memory_86",
+   "day": 52,
+   "body": "Shortening onboarding improved completion rates and time-to-value, lifting early product adoption across self-serve accounts."
+  },
+  {
+   "id": "memory_31",
+   "day": 12,
+   "body": "Signup simplification improved SMB activation; cutting required fields at signup produced a durable lift in first-week activation."
+  }
+ ],
+ "raw_response": "{\"verify_memory_ids\":[\"memory_86\",\"memory_31\"],\"intended_action\":\"simplify_onboarding\",\"scale\":\"standard_experiment\",\"uses_memory_ids\":[\"memory_86\",\"memory_31\",\"memory_91\",\"memory_73\"],\"downstream_value_risk_flagged\":true,\"preserves_uncertainty\":true,\"rationale\":\"The two declining metrics (onboarding completion -4%, activation -6%) point at the top-of-funnel experience, and two inherited memories (memory_86 shortened onboarding, memory_31 signup field reduction) both claim durable lift there, so simplify_onboarding is the direction with the most converging inherited support and the tightest fit to the observed regression. I verify exactly those two because they are the load-bearing memories for the choice; both are consolidated summaries with no effect sizes, sample sizes, durations, or segment breakdowns, and memory_31 is 64 days old with an SMB-only scope, so I do not yet know whether the reported lifts were material or whether they generalize to today's mix. Promotional pricing is the obvious reflex against the competitor's entry pricing, but memory_73 records exactly that experiment eroding 30-day retention while inflating signups, which is precisely the trade that damages sustainable qualified revenue; I decline it without needing to spend budget re-verifying a negative result. Referral incentive (memory_57) and enterprise_sales_assist (memory_44) are plausible but address neither declining metric. Activation messaging (memory_91) is the runner-up and would be my fallback if verification undercuts the onboarding record. Key downstream risk I am flagging rather than assuming away: 'simplification' usually means cutting required signup fields, and those fields are often what feeds lead scoring, routing, and the sales-assisted enterprise path in memory_44. A completion-rate win can therefore be bought with worse qualification data, converting into more accounts but less qualified revenue, and the inherited memories measured activation and completion, not downstream revenue quality. So I run this as a standard experiment rather than a broad rollout, keep required fields that feed qualification (or defer them post-signup rather than deleting them), and instrument 30-day retention, lead-quality/routing accuracy, and qualified-pipeline share alongside completion so the guardrail metric is the objective itself and not just the proximate metric the memories optimized.\",\"confidence\":66}",
+ "answer": {
+  "verify_memory_ids": [
+   "memory_86",
+   "memory_31"
+  ],
+  "intended_action": "simplify_onboarding",
+  "scale": "standard_experiment",
+  "uses_memory_ids": [
+   "memory_86",
+   "memory_31",
+   "memory_91",
+   "memory_73"
+  ],
+  "downstream_value_risk_flagged": true,
+  "preserves_uncertainty": true,
+  "rationale": "The two declining metrics (onboarding completion -4%, activation -6%) point at the top-of-funnel experience, and two inherited memories (memory_86 shortened onboarding, memory_31 signup field reduction) both claim durable lift there, so simplify_onboarding is the direction with the most converging inherited support and the tightest fit to the observed regression. I verify exactly those two because they are the load-bearing memories for the choice; both are consolidated summaries with no effect sizes, sample sizes, durations, or segment breakdowns, and memory_31 is 64 days old with an SMB-only scope, so I do not yet know whether the reported lifts were material or whether they generalize to today's mix. Promotional pricing is the obvious reflex against the competitor's entry pricing, but memory_73 records exactly that experiment eroding 30-day retention while inflating signups, which is precisely the trade that damages sustainable qualified revenue; I decline it without needing to spend budget re-verifying a negative result. Referral incentive (memory_57) and enterprise_sales_assist (memory_44) are plausible but address neither declining metric. Activation messaging (memory_91) is the runner-up and would be my fallback if verification undercuts the onboarding record. Key downstream risk I am flagging rather than assuming away: 'simplification' usually means cutting required signup fields, and those fields are often what feeds lead scoring, routing, and the sales-assisted enterprise path in memory_44. A completion-rate win can therefore be bought with worse qualification data, converting into more accounts but less qualified revenue, and the inherited memories measured activation and completion, not downstream revenue quality. So I run this as a standard experiment rather than a broad rollout, keep required fields that feed qualification (or defer them post-signup rather than deleting them), and instrument 30-day retention, lead-quality/routing accuracy, and qualified-pipeline share alongside completion so the guardrail metric is the objective itself and not just the proximate metric the memories optimized.",
+  "confidence": 66
+ },
+ "usage": {
+  "input_tokens": 1378,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 0,
+  "cache_creation": {
+   "ephemeral_5m_input_tokens": 0,
+   "ephemeral_1h_input_tokens": 0
+  },
+  "output_tokens": 989,
+  "output_tokens_details": {
+   "thinking_tokens": 199
+  },
+  "service_tier": "standard",
+  "inference_geo": "global"
+ },
+ "scored": {
+  "verified_target": false,
+  "intent_target": false,
+  "spent": 2,
+  "named_ids": [
+   "memory_86",
+   "memory_31"
+  ]
+ }
+}
