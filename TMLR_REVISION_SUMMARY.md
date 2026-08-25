@@ -1,4 +1,12 @@
-# TMLR revision — what materially changed since submission 11614
+# TMLR revision — UPLOADED 2026-08-25
+
+**Submission 11614 revised in place.** New title, abstract, 12-page anonymous
+PDF, Submission Type corrected to Regular (main content 8pp), and a 22 MB
+anonymized supplementary bundle (all episode records, prospective
+specifications, analysis scripts) attached. An Official Comment to the Action
+Editor (readers: EIC + AE + Authors, per TMLR's required-reader policy)
+explains the revision and why it was uploaded before review began. The
+summary below is the change record and will ground responses during review.
 
 The research question is unchanged: when provenance verification is scarce,
 how do agents allocate it, what changes that allocation, and when does the
