@@ -178,11 +178,20 @@ neg = [r for r in BOTH if r.get("level") == "negative"]; pro = [r for r in BOTH 
 pct("TenNegOnly", rate(neg)[0], rate(neg)[1]); pct("TenProhib", rate(pro)[0], rate(pro)[1])
 put("TenProhibDelta", f"{100*(rate(neg)[2]-rate(pro)[2]):.1f}")
 # heterogeneity, which sits next to the headline
-per = {m: (eff(E10, model=m), eff(E10R, model=m)) for m in sorted({r["model"] for r in E10})}
+from fractions import Fraction as _Fr
+import decimal as _dec
+def _effx(R, m):
+    a = [r for r in R if r.get("level") == "removed" and r["model"] == m]
+    b = [r for r in R if r.get("level") in ("negative", "prohibition") and r["model"] == m]
+    ka, kb = sum(r["scored"]["verified_target"] for r in a), sum(r["scored"]["verified_target"] for r in b)
+    return 100*(_Fr(ka, len(a)) - _Fr(kb, len(b)))
+def _r1(fr):
+    return (_dec.Decimal(fr.numerator)/_dec.Decimal(fr.denominator)).quantize(_dec.Decimal("0.1"), rounding=_dec.ROUND_HALF_UP)
+per = {m: (_effx(E10, m), _effx(E10R, m)) for m in sorted({r["model"] for r in E10})}
 put("TenPosPrimary", sum(1 for v in per.values() if v[0] > 0))
 put("TenPosRepl", sum(1 for v in per.values() if v[1] > 0))
-put("TenMinModel", f"{min(v[0] for v in per.values()):.1f}")
-put("TenMaxModel", f"{max(v[0] for v in per.values()):.1f}")
+put("TenMinModel", str(_r1(min(v[0] for v in per.values()))))
+put("TenMaxModel", str(_r1(max(v[0] for v in per.values()))))
 top2 = sorted(per, key=lambda m: -per[m][0])[:2]
 put("TenExTwoPrimary", f"{eff([r for r in E10 if r['model'] not in top2]):.1f}")
 put("TenExTwoRepl", f"{eff([r for r in E10R if r['model'] not in top2]):.1f}")
@@ -193,7 +202,7 @@ put("TenFamMax", f"{max(eff(BOTH, family=f) for f in FAMS):.1f}")
 flipped = [m for m in per if per[m][0]*per[m][1] < 0]
 put("TenFlippedModel", flipped[0] if flipped else "none")
 if flipped:
-    put("TenFlippedPrimary", f"{per[flipped[0]][0]:.1f}"); put("TenFlippedRepl", f"{per[flipped[0]][1]:.1f}")
+    put("TenFlippedPrimary", str(_r1(per[flipped[0]][0]))); put("TenFlippedRepl", str(_r1(per[flipped[0]][1])))
 put("TenErr", len(glob.glob(os.path.join(ROOT, "runs/exp10/*.ERROR.json")))
             + len(glob.glob(os.path.join(ROOT, "runs/exp10-repl/*.ERROR.json"))))
 
@@ -241,7 +250,7 @@ order = sorted(per, key=lambda m: per[m][0])
 f.append(r"\newcommand{\TenModelLabels}{" + ",".join(short.get(m, m) for m in order) + "}")
 for idx, which in [(0, "Primary"), (1, "Repl")]:
     f.append(rf"\newcommand{{\TenModel{which}Coords}}{{%")
-    f.append(" ".join(f"({short.get(m,m)},{per[m][idx]:.1f})" for m in order))
+    f.append(" ".join(f"({short.get(m,m)},{_r1(per[m][idx])})" for m in order))
     f.append("}")
 f.append(rf"\newcommand{{\TenPooledLine}}{{{eff(BOTH):.1f}}}")
 for path in FIG:
