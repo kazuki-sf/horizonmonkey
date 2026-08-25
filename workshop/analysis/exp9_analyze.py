@@ -128,3 +128,31 @@ ks, ns, ps = rate(sh); kl, nl, pl = rate(lo_)
 print(f"  body length within the natural arm (split at {med})")
 print(f"     shorter {ks:3}/{ns:3} = {ps:5.1%}   longer {kl:3}/{nl:3} = {pl:5.1%}"
       f"     {100*(pl-ps):+.1f} pts")
+
+# ---- balance check and a body-matched contrast --------------------------------
+# Added before 552 of the 600 episodes existed (48 smoke episodes did), because
+# the registered seed includes the arm name: `natural` and `natural-padded` draw
+# INDEPENDENTLY from the 60 bodies rather than in pairs. Randomisation keeps the
+# marginal contrasts unbiased, but H43 divides one gap by another, so a chance
+# imbalance in the body pool would distort it. Both views are printed; the
+# registered marginal one governs.
+print("\n" + "=" * 70)
+print("BODY-POOL BALANCE between the two natural arms\n")
+pool = {a: collections.Counter(r["natural_index"] for r in rows if r["arm"] == a)
+        for a in ("natural", "natural-padded")}
+for a, c in pool.items():
+    src = [len(NATURAL_BODY[i]) for i in c.elements()] if (NATURAL_BODY := {
+        r["natural_index"]: r["natural_source"]["body"] for r in rows if r["natural_source"]}) else []
+    if src:
+        print(f"  {a:16} {len(c):2} of 60 bodies drawn, "
+              f"underlying length mean {sum(src)/len(src):.1f}, median {sorted(src)[len(src)//2]}")
+shared = set(pool["natural"]) & set(pool["natural-padded"])
+print(f"  bodies appearing in both arms: {len(shared)} of 60")
+if shared:
+    A = [r for r in rows if r["arm"] == "natural-padded" and r["natural_index"] in shared]
+    B = [r for r in rows if r["arm"] == "natural" and r["natural_index"] in shared]
+    ka, na, pa = rate(A); kb, nb, pb = rate(B)
+    print(f"  restricted to those bodies:")
+    print(f"     natural-padded {ka:3}/{na:3} = {pa:5.1%}     natural {kb:3}/{nb:3} = {pb:5.1%}"
+          f"     padding effect {100*(pa-pb):+.1f} pts")
+    print("  (exploratory; the registered marginal contrasts above are the result)")
