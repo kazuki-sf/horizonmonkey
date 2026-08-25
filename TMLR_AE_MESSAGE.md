@@ -2,14 +2,14 @@
 
 > Dear Action Editor,
 >
-> Since submitting, pre-registered follow-up experiments that were already
+> Since submitting, prospectively specified follow-up experiments that were already
 > underway have completed and materially changed two interpretations in the
 > manuscript. In particular, one reported mechanism ("generic hedging attracts
-> verification") was falsified by our own pre-registered length-matched
-> control, and the revised manuscript withdraws that claim; it also adds a
+> verification") was not supported by our own prospectively specified
+> length-matched control, and the revised manuscript withdraws that claim; it also adds a
 > randomized working-plan assignment experiment, a register- and
 > quantification-controlled test of the semantic-constraint effect with a
-> pre-registered disjoint-seed replication run, and clarified limitations.
+> prospectively specified disjoint-seed replication run, and clarified limitations.
 >
 > We have prepared an updated manuscript that preserves the same research
 > question but is materially more accurate. Since TMLR recommends waiting

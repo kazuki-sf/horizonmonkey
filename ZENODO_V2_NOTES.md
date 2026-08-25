@@ -16,19 +16,19 @@ change title; the concept record shows the newest.
 
 ## Version description (paste into the Zenodo "description of changes")
 
-> This version incorporates pre-registered follow-up experiments that
+> This version incorporates prospectively specified follow-up experiments that
 > materially refine the interpretation of the original results. It withdraws
 > the earlier claim that generic hedging attracts provenance scrutiny, which a
-> pre-registered length-matched control falsified; adds a randomized
+> prospectively specified length-matched control left unsupported; adds a randomized
 > working-plan assignment experiment identifying the upstream causal effect,
 > with its confounds stated; controls the semantic-constraint effect for
-> register and quantitative specificity and adds a pre-registered disjoint-seed
+> register and quantitative specificity and adds a prospectively specified disjoint-seed
 > replication run; reports model heterogeneity alongside every pooled estimate;
 > separates the hand-installed corruption used in controlled experiments from
 > what the tested benign consolidation pipeline actually produced; and
 > sharpens the threat-model boundary accordingly. The research question is
 > unchanged. Appendix E lists each withdrawn interpretation with the test that
-> falsified it.
+> overturned it.
 
 ## Metadata checklist
 

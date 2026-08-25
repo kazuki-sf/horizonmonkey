@@ -3,17 +3,17 @@
 The research question is unchanged: when provenance verification is scarce,
 how do agents allocate it, what changes that allocation, and when does the
 resulting evidence availability matter? Several interpretations changed
-materially, because pre-registered follow-up experiments that were underway at
-submission time completed and falsified two of them. The revision is
+materially, because prospectively specified follow-up experiments that were underway at
+submission time completed and left two of them unsupported. The revision is
 scientifically more accurate than the submitted version. The title changed
 from *Verification Goes Where the Agent Is Already Looking* to *Verification
-Allocation in Inherited Agent Memory*, because the falsified interpretations
+Allocation in Inherited Agent Memory*, because the withdrawn interpretations
 were part of what the old title summarized.
 
 ## Claims withdrawn
 
 - **"Silence is stealthier than qualification"** and the claim that generic
-  hedging attracts verification. A pre-registered length-matched control gives
+  hedging attracts verification. A prospectively specified length-matched control gives
   −3.3 points (p = 0.56); the original gap was a silent-deletion versus
   neutral-clause contrast (+16.0) that bundles length, clause existence and
   neutral content.
@@ -31,8 +31,8 @@ were part of what the old title summarized.
   contrast +84.7; positive in 6/6 models. Stated with its bundle: the
   intervention does not isolate internal plan state from topical salience or
   directive framing.
-- **Register/quantification-controlled constraint effect with a pre-registered
-  disjoint-seed replication run** (1,680 episodes; 1,440 in the contrast): +31.9
+- **Register/quantification-controlled constraint effect with a prospectively
+  specified disjoint-seed replication run** (1,680 episodes; 1,440 in the contrast): +31.9
   pooled, +29.2 primary, +34.6 replication, positive within both registers and
   all six wording families; magnitude varies from −8.8 to +91.3 by model.
 - **Prohibition increment**: +18.3 points beyond the quantified negative.
@@ -47,7 +47,7 @@ were part of what the old title summarized.
 - The downstream causal result is unchanged (139/150 → 3/150; 39/150 → 0/150)
   and now explicitly framed as consequence, not mechanism, with the
   upstream/downstream separation stated.
-- Pre-registration discipline is now documented with timestamps, amendment
+- Prospective-specification discipline is now documented with timestamps, amendment
   counts, and one registered hypothesis breach (H32) reported as a breach.
 
 ## Claims weakened
@@ -63,7 +63,7 @@ were part of what the old title summarized.
 
 ## New preregistered experiments and replication
 
-Experiments 7–10 were pre-registered before their first model calls with
+Experiments 7–10 were prospectively specified in a version-controlled record before their first model calls with
 committed analysis scripts; Experiment 10 includes a disjoint-seed replication run
 opened only after the primary analysis was committed. The scorer's
 non-independence (it is one of the six consolidator models) and the absence of
