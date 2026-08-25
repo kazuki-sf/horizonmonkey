@@ -3,11 +3,19 @@
 > **Outcome (24 Aug 2026).** arXiv moderation declined the submission:
 > *"your submission would benefit from additional review and revision that is
 > outside of the services we provide."* No defect was identified — this is a
-> screening decision, not a review. arXiv will reconsider on appeal only once the
-> work is published in a conventional journal, and **only one appeal is allowed**
-> ("when an appeal is denied by appellate moderators, no further appeal is
-> possible"), so no appeal has been filed and none should be until a peer-review
-> decision is in hand.
+> screening decision, not a review.
+>
+> **Correction (25 Aug 2026).** An earlier version of this note said "only one
+> appeal is allowed", which overstates both sources. The rejection email sets no
+> limit on the number of appeals; the linked appeals policy says only that
+> *"when an appeal is denied by appellate moderators, no further appeal is
+> possible."* An appeal is not rationed — **a denial is terminal.** The email's
+> condition for reconsideration is publication in a **conventional journal**,
+> evidenced by *"a resolving DOI to the published version of the work or link to
+> the journal's website showing the status of the work"*, and it warns that
+> publication does not guarantee acceptance. The Zenodo DOI does **not** satisfy
+> this; Zenodo is a repository, not a journal. See
+> `paper/ARXIV_APPEAL_PACKAGE.md`, which quotes the notice verbatim.
 >
 > The paper is published instead on **Zenodo**:
 > [10.5281/zenodo.22084498](https://doi.org/10.5281/zenodo.22084498) (all
