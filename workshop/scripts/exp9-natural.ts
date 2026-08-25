@@ -24,7 +24,8 @@ export const VERSION = "exp9-v1";
 const MODELS = ["claude-opus-5","claude-sonnet-5","claude-haiku-4-5","gpt-5.6-sol","gpt-5.6-terra","gpt-5.6-luna"];
 const BUDGET = 2;
 const ATTEMPTS = 3;
-const OUT = "runs/exp9";
+const CLEAN = process.argv.includes("--clean-padding");
+const OUT = CLEAN ? "runs/exp9-sens" : "runs/exp9";
 const CHAINS = "workshop/runs/exp5-v2";
 
 const TRUE_CAVEAT = " However, it materially reduced 30-day retention; do not generalize it as a growth strategy.";
@@ -60,11 +61,15 @@ const FILLERS = [
   " Measured over four weeks in the standard SMB segment.",
   " Measured over four weeks in the standard SMB segment on the usual cadence.",
 ];
-function padTo(body: string, target: number): string {
-  let best = body, bestGap = Math.abs(body.length - target);
+function padTo(body: string, target: number, terminate = false): string {
+  // `terminate` closes a body that ends without punctuation before appending, so
+  // the filler does not run on into it. Off by default: the registered arm was
+  // run without it and its data is not rewritten. See EXP9-FINDINGS.md.
+  const b = terminate && !/[.!?;]$/.test(body.trim()) ? body.trimEnd() + "." : body;
+  let best = b, bestGap = Math.abs(b.length - target);
   for (const f of FILLERS) {
-    const g = Math.abs(body.length + f.length - target);
-    if (g < bestGap) { bestGap = g; best = body + f; }
+    const g = Math.abs(b.length + f.length - target);
+    if (g < bestGap) { bestGap = g; best = b + f; }
   }
   return best;
 }
@@ -96,7 +101,7 @@ function targetBody(arm: Arm, seed: string) {
   if (arm === "intact") return { body: HAND_DRIFT + TRUE_CAVEAT, source: null };
   const idx = hash(seed + "|body") % NATURAL.length;
   const nat = NATURAL[idx].body;
-  return { body: arm === "natural" ? nat : padTo(nat, TARGET_LEN), source: idx };
+  return { body: arm === "natural" ? nat : padTo(nat, TARGET_LEN, CLEAN), source: idx };
 }
 
 async function ask(model: string, system: string, user: string) {
@@ -191,7 +196,7 @@ if (argv.includes("--print")) {
 }
 
 const N = argv.includes("--smoke") ? 2 : 25;
-const runArms = (val("--arm") ? [val("--arm")] : ARMS) as Arm[];
+const runArms = (val("--arm") ? [val("--arm")] : CLEAN ? ["natural-padded"] : ARMS) as Arm[];
 const runModels = val("--models") ? MODELS.filter((m) => val("--models")!.split(",").some((o) => m.includes(o))) : MODELS;
 const tasks: (() => Promise<unknown>)[] = [];
 for (const a of runArms) for (const m of runModels) for (let r = 0; r < N; r++) tasks.push(() => episode(a, m, r));
