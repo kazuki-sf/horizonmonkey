@@ -36,43 +36,50 @@ is a Coframe-style growth agent; that is the **example**, not the product.
 
 ## Paper
 
-**Verification Goes Where the Agent Is Already Looking: Intent-Aligned Triage of
-Inherited Memory Under Budget** —
+**Verification Allocation in Inherited Agent Memory: Provenance Availability Is
+Not Provenance Use** —
 [10.5281/zenodo.22084498](https://doi.org/10.5281/zenodo.22084498)
 
-A long-horizon agent inherits memory it did not write and cannot check all of it.
-The paper gives six production models a budget of provenance lookups, silently
-deletes one true negative caveat from one inherited lesson, and measures *which*
-beliefs get checked. Across 1,020 pre-registered episodes, verification is
-intent-aligned: it goes to the memories backing the action the model already
-intends, not to the belief that is most costly if wrong. A second experiment
-(450 more episodes) then makes that unchecked belief load-bearing.
+A memory system that gives every record a provenance link does not thereby
+ensure the corrective record is consulted. An agent inheriting more consolidated
+beliefs than it can re-derive must choose a few links to follow before it acts.
+The paper measures that allocation directly across ten experiments (16 models,
+11 organizations) with prospectively specified confirmatory contrasts and a
+disjoint-seed replication run: exogenous working-plan assignments causally
+redirect verification by 84.7 points (the intervention does not isolate plan
+state from topical salience or directive framing); a decision-relevant
+constraint suppresses verification by 46 points at fixed length, an effect that
+survives register and quantification controls at 31.9 points with strong model
+heterogeneity; randomising which provenance reaches a later agent moves its
+decision from 139/150 to 3/150; and the benign six-generation consolidation
+pipeline tested never produced the complete negative deletion the controlled
+experiments install (0/360), bounding the threat model. Version 2 withdraws an
+earlier hedging interpretation that its own prospectively specified control
+left unsupported.
 
 | | |
 |---|---|
-| Source and build | [`paper/`](paper/) — `sh paper/make-arxiv.sh` |
-| Pre-registrations | [`runs/paper/preregistration.md`](runs/paper/preregistration.md), [`runs/paper-phase2/preregistration.md`](runs/paper-phase2/preregistration.md) — committed before the first model call |
-| Episode records | `runs/paper/`, `runs/paper-phase2/` — every episode, released in full |
-| Reanalysis | `python3 paper/analyze.py` and `paper/analyze_phase2.py` regenerate every number, table, and figure from the episode files. No API key needed. |
-
-The paper is a separate study *built on* this harness: it uses the caveat-omission
-fault against real models, where the demo below uses the deterministic simulation.
+| Source and build | [`paper/`](paper/) — canonical source `paper/main.tex` (public) and `paper/tmlr-main.tex` (anonymous), shared sections |
+| Prospective specifications | [`workshop/`](workshop/) `PREREGISTRATION*.md` and [`runs/paper/preregistration.md`](runs/paper/preregistration.md) — committed before each experiment's first model call |
+| Episode records | `runs/` and `workshop/runs/` — every episode, released in full |
+| Reanalysis | the emitters in `workshop/analysis/` regenerate every number, table, and figure from the episode files. No API key needed. |
 
 ### Cite
 
 ```bibtex
 @misc{nakayashiki2026verification,
-  title  = {Verification Goes Where the Agent Is Already Looking:
-            Intent-Aligned Triage of Inherited Memory Under Budget},
+  title  = {Verification Allocation in Inherited Agent Memory:
+            Provenance Availability Is Not Provenance Use},
   author = {Nakayashiki, Kazuki},
   year   = {2026},
   doi    = {10.5281/zenodo.22084498},
   url    = {https://doi.org/10.5281/zenodo.22084498},
-  note   = {Zenodo}
+  note   = {Zenodo, version 2}
 }
 ```
 
-The DOI above resolves to the latest version; `10.5281/zenodo.22084500` pins v1.
+The DOI above resolves to the latest version; `10.5281/zenodo.22102676` pins
+v2 and `10.5281/zenodo.22084500` pins v1.
 
 ---
 

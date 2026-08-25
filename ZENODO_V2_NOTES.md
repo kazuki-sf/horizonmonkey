@@ -1,4 +1,11 @@
-# Zenodo v2 — prepared, not uploaded
+# Zenodo v2 — PUBLISHED 2026-08-25
+
+**Version DOI: [10.5281/zenodo.22102676](https://doi.org/10.5281/zenodo.22102676)**
+(record <https://zenodo.org/records/22102676>). Concept DOI
+`10.5281/zenodo.22084498` now resolves to v2; v1 remains pinned at
+`10.5281/zenodo.22084500`. Uploaded file verified by MD5
+`5ad9b5ff490a530bac13ce1107761881` against the frozen build. Everything below
+is the preparation record.
 
 **Concept DOI (all versions):** `10.5281/zenodo.22084498` — upload v2 as a
 **new version** of this record, not a new record. Zenodo reserves the v2
@@ -41,4 +48,4 @@ change title; the concept record shows the newest.
 
 ## Status
 
-**READY once the hostile review passes** — publication is a human action.
+**PUBLISHED.**
